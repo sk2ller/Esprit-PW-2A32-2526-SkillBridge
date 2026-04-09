@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f172a,100:2563eb&height=200&section=header&text=SkillBridge&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Learn%20%E2%86%92%20Build%20%E2%86%92%20Earn&descAlignY=55&descSize=18" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:2A2A2E,100:EA7322&height=220&section=header&text=SkillBridge&fontSize=50&fontColor=FDF4E6&animation=fadeIn&desc=Learn%20%E2%86%92%20Build%20%E2%86%92%20Earn&descAlignY=60&descSize=18"/>
 </p>
 <p align="center">
-  <img src="https://img.shields.io/badge/status-in%20development-black?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/platform-freelancing-blue?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/model-learn%20%2B%20earn-success?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/status-in%20development-3A3A3E?style=for-the-badge&logoColor=FDF4E6"/>
+  <img src="https://img.shields.io/badge/platform-freelancing-EA7322?style=for-the-badge&logoColor=FDF4E6"/>
+  <img src="https://img.shields.io/badge/model-learn%20%2B%20earn-F2913C?style=for-the-badge&logoColor=2A2A2E"/>
 </p>
 
 <p align="center">
@@ -14,28 +14,28 @@
 
 ## Overview
 
-SkillBridge is built to remove the barrier between learning and earning.
+SkillBridge is built to remove the gap between learning and earning.
 
-Instead of spending months preparing before taking action, users can start immediately — learning a skill and applying it in real situations at the same time.
+Instead of spending months preparing, users can start immediately — learning a skill and applying it in real situations at the same time.
 
-It’s a direct path from knowledge to income.
+A direct path from knowledge to income.
 
-+ Learn skills that matter
-+ Apply them instantly
++ Learn what matters
++ Apply instantly
 + Earn while improving
 
-- Integrated courses focused on freelancing
-- Real-time service marketplace
-- Hands-on experience with real clients
-- Growth system from beginner to professional
+- Courses focused on real freelancing skills  
+- Built-in marketplace to offer services  
+- Real client experience from day one  
+- Smooth growth from beginner to professional
 
 > You don’t need to be ready.  
 > You need to start.
 
-SkillBridge is designed for action, not hesitation.
+SkillBridge is built for action.
 
 <p align="center">
-  <img src="https://readme-typing-svg.herokuapp.com/?lines=Learn+skills;Build+experience;Earn+money;Repeat.&center=true&size=20">
+  <img src="https://readme-typing-svg.herokuapp.com/?lines=Learn+skills;Apply+them+instantly;Earn+in+real+time;Grow+without+limits&center=true&size=22&color=EA7322">
 </p>
 
 ## Final
