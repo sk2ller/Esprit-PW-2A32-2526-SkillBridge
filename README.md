@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:2A2A2E,100:EA7322&height=220&section=header&text=SkillBridge&fontSize=50&fontColor=FDF4E6&animation=fadeIn&desc=Learn%20%E2%86%92%20Build%20%E2%86%92%20Earn&descAlignY=60&descSize=18"/>
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:2A2A2E,100:EA7322&height=200&section=header&text=SkillBridge&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Learn%20%E2%86%92%20Build%20%E2%86%92%20Earn&descAlignY=55&descSize=18" />
 </p>
 
 <p align="center">
