@@ -1,6 +1,7 @@
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:2A2A2E,100:EA7322&height=220&section=header&text=SkillBridge&fontSize=50&fontColor=FDF4E6&animation=fadeIn&desc=Learn%20%E2%86%92%20Build%20%E2%86%92%20Earn&descAlignY=60&descSize=18"/>
 </p>
+
 <p align="center">
   <img src="https://img.shields.io/badge/status-in%20development-3A3A3E?style=for-the-badge&logoColor=FDF4E6"/>
   <img src="https://img.shields.io/badge/platform-freelancing-EA7322?style=for-the-badge&logoColor=FDF4E6"/>
