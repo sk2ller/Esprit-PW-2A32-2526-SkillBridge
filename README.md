@@ -1,7 +1,3 @@
-## Getting Started
-
-Instructions on how to get started with the project will go here.
-=======
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:2A2A2E,100:EA7322&height=200&section=header&text=SkillBridge&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Learn%20%E2%86%92%20Build%20%E2%86%92%20Earn&descAlignY=55&descSize=18" />
 </p>
