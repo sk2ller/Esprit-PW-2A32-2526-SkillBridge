@@ -44,4 +44,3 @@ SkillBridge is built for action.
 SkillBridge is not just a platform.
 
 It’s a system where skills become real opportunities.
->>>>>>> b4b81fe6edd51de5f8e4dcbc64f4fc8a4234df7e
