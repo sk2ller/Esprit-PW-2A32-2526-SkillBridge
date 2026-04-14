@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Frontend - ProjetHub</title>
+    <style type="text/css">
+        body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; color: #2d2a26; background: #f5efe6; }
+        a { color: inherit; text-decoration: none; }
+        .shell { min-height: 100vh; display: grid; grid-template-columns: 260px 1fr; }
+        .sidebar { background: linear-gradient(180deg, #1f1d1b, #2d2a27); color: #fff; padding: 24px 18px; display: flex; flex-direction: column; gap: 20px; }
+        .brand { display: flex; align-items: center; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
+        .brand-mark { width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 10px; background: linear-gradient(135deg, #de7b2d, #f0a55f); font-weight: bold; }
+        .brand-text { font-size: 22px; font-weight: bold; }
+        .nav-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,.5); }
+        .nav a { display: block; padding: 12px 14px; margin-bottom: 8px; border-radius: 14px; color: rgba(255,255,255,.8); }
+        .nav a.active, .nav a:hover { background: rgba(222,123,45,.18); color: #fff; }
+        .footer-card { margin-top: auto; border-radius: 18px; background: rgba(255,255,255,.05); padding: 16px; border: 1px solid rgba(255,255,255,.08); }
+        .footer-title { font-weight: bold; margin-bottom: 6px; }
+        .footer-text { color: rgba(255,255,255,.65); font-size: 13px; line-height: 1.5; }
+        .main { padding: 28px 30px 36px; }
+        .topbar { display: table; width: 100%; margin-bottom: 22px; }
+        .topbar-left, .topbar-right { display: table-cell; vertical-align: top; }
+        .topbar-right { text-align: right; }
+        .eyebrow { font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.8px; color: #b55f17; margin-bottom: 8px; }
+        h1 { margin: 0; font-size: 34px; line-height: 1.1; }
+        .subtitle { margin-top: 8px; color: #71685f; }
+        .search-box { display: inline-table; background: rgba(255,255,255,.75); border: 1px solid #eadfce; border-radius: 14px; padding: 8px; }
+        .search-box input[type="text"] { border: 0; background: transparent; padding: 10px 12px; width: 240px; outline: none; }
+        .btn { display: inline-block; border-radius: 14px; padding: 12px 16px; font-size: 14px; font-weight: bold; border: 1px solid transparent; }
+        .btn-primary { background: linear-gradient(135deg, #de7b2d, #f09b47); color: #fff; }
+        .btn-soft { background: rgba(222,123,45,.12); color: #b55f17; border-color: rgba(222,123,45,.18); }
+        .stats { display: table; width: 100%; border-spacing: 0 16px; }
+        .stat { display: table-cell; width: 25%; padding-right: 16px; }
+        .stat-box { background: rgba(255,250,242,.94); border: 1px solid #eadfce; border-radius: 20px; padding: 18px; }
+        .stat-icon { width: 38px; height: 38px; line-height: 38px; text-align: center; border-radius: 12px; background: linear-gradient(135deg, #de7b2d, #efb169); color: #fff; font-weight: bold; margin-bottom: 16px; }
+        .stat-value { font-size: 30px; font-weight: bold; margin-bottom: 6px; }
+        .stat-label { color: #71685f; font-size: 13px; }
+        .section-head { display: table; width: 100%; margin: 8px 0 16px; }
+        .section-head-left, .section-head-right { display: table-cell; vertical-align: middle; }
+        .section-head-right { text-align: right; }
+        .section-title { margin: 0; font-size: 24px; }
+        .section-subtitle { margin-top: 6px; color: #71685f; }
+        .counter { display: inline-block; padding: 10px 14px; border-radius: 999px; background: rgba(222,123,45,.12); color: #b55f17; border: 1px solid rgba(222,123,45,.18); font-weight: bold; }
+        .projects { display: table; width: 100%; border-spacing: 0 16px; }
+        .project { display: table-cell; width: 50%; padding-right: 16px; vertical-align: top; }
+        .project-card { background: rgba(255,250,242,.97); border: 1px solid #eadfce; border-radius: 22px; padding: 18px; }
+        .project-head { display: table; width: 100%; margin-bottom: 14px; }
+        .project-icon { width: 42px; height: 42px; line-height: 42px; text-align: center; border-radius: 14px; background: linear-gradient(135deg, #de7b2d, #eab27c); color: #fff; font-weight: bold; display: inline-block; }
+        .project-badge-wrap { text-align: right; }
+        .badge { display: inline-block; padding: 8px 12px; border-radius: 999px; font-size: 12px; font-weight: bold; }
+        .badge-progress { background: rgba(222,123,45,.14); color: #b55f17; }
+        .badge-done { background: rgba(107,143,95,.14); color: #48633f; }
+        .badge-waiting { background: rgba(200,141,45,.14); color: #9c6716; }
+        .project-title { margin: 0 0 8px; font-size: 20px; }
+        .project-description { color: #71685f; line-height: 1.55; min-height: 72px; }
+        .project-meta { display: table; width: 100%; margin-top: 16px; padding-top: 16px; border-top: 1px solid #eadfce; }
+        .meta-col { display: table-cell; width: 50%; }
+        .meta-label { display: block; color: #71685f; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .meta-value { display: block; font-weight: bold; }
+        .project-actions { display: table; width: 100%; margin-top: 16px; }
+        .action-left, .action-right { display: table-cell; }
+        .action-right { text-align: right; }
+        .media { margin-top: 24px; height: 220px; border-radius: 20px; background: linear-gradient(135deg, #3d3a38, #e6d6c0); position: relative; overflow: hidden; }
+        .media-label { position: absolute; left: 22px; top: 18px; color: #fff; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase; }
+        .media-sub { position: absolute; left: 22px; bottom: 18px; width: 70%; color: rgba(255,255,255,.85); line-height: 1.5; }
+        @media screen and (max-width: 1100px) { .shell, .stats, .projects { display: block; } .stat, .project { display: block; width: auto; padding-right: 0; margin-bottom: 16px; } }
+        @media screen and (max-width: 700px) { .main { padding: 20px 16px 28px; } .topbar-left, .topbar-right, .section-head-left, .section-head-right, .project-head, .project-meta, .project-actions { display: block; text-align: left; } .search-box input[type="text"] { width: 100%; display: block; margin-bottom: 8px; } }
+    </style>
+</head>
+<body>
+<div class="shell">
+    <div class="sidebar">
+        <div class="brand"><span class="brand-mark">P</span><span class="brand-text">ProjetHub</span></div>
+        <div class="nav-title">Navigation</div>
+        <div class="nav">
+            <a class="active" href="frontend.html">Frontend</a>
+            <a href="backend.html">Backend</a>
+        </div>
+        <div class="footer-card"><div class="footer-title">Vue frontend</div><div class="footer-text">Interface claire, cartes projet et recherche rapide, en HTML4 pur.</div></div>
+    </div>
+
+    <div class="main">
+        <div class="topbar">
+            <div class="topbar-left"><div class="eyebrow">Frontend</div><h1>Mes Projets</h1><div class="subtitle">Gerez et suivez tous vos projets dans une interface simple et elegante.</div></div>
+            <div class="topbar-right"><div class="search-box"><input type="text" value="Rechercher un projet" /><a class="btn btn-soft" href="javascript:void(0)">Rechercher</a></div><div style="margin-top:12px;"><a class="btn btn-primary" href="javascript:void(0)">+ Nouveau projet</a></div></div>
+        </div>
+
+        <div class="stats">
+            <div class="stat"><div class="stat-box"><div class="stat-icon">#</div><div class="stat-value">12</div><div class="stat-label">Projets au total</div></div></div>
+            <div class="stat"><div class="stat-box"><div class="stat-icon">+</div><div class="stat-value">5</div><div class="stat-label">En cours</div></div></div>
+            <div class="stat"><div class="stat-box"><div class="stat-icon">=</div><div class="stat-value">3</div><div class="stat-label">Terminés</div></div></div>
+            <div class="stat"><div class="stat-box"><div class="stat-icon">$</div><div class="stat-value">15 400</div><div class="stat-label">Budget total</div></div></div>
+        </div>
+
+        <div class="section-head"><div class="section-head-left"><h2 class="section-title">Liste des projets</h2><div class="section-subtitle">Cartes inspirées du template fourni, adaptées à votre contexte projet.</div></div><div class="section-head-right"><span class="counter">6 résultat(s)</span></div></div>
+
+        <div class="projects">
+            <div class="project"><div class="project-card"><div class="project-head"><div style="display:table;width:100%;"><div style="display:table-cell;"><span class="project-icon">C</span></div><div class="project-badge-wrap"><span class="badge badge-progress">En cours</span></div></div></div><h3 class="project-title">Création site vitrine</h3><div class="project-description">Développement d'un site web pour une entreprise locale avec une présentation moderne, responsive et claire.</div><div class="project-meta"><div class="meta-col"><span class="meta-label">Budget</span><span class="meta-value">1 500 DH</span></div><div class="meta-col"><span class="meta-label">Création</span><span class="meta-value">11-04-2026</span></div></div><div class="project-actions"><div class="action-left"><a class="btn btn-soft" href="javascript:void(0)">Voir</a></div><div class="action-right"><a class="btn btn-primary" href="javascript:void(0)">Modifier</a></div></div></div></div>
++            <div class="project"><div class="project-card"><div class="project-head"><div style="display:table;width:100%;"><div style="display:table-cell;"><span class="project-icon">B</span></div><div class="project-badge-wrap"><span class="badge badge-waiting">En attente</span></div></div></div><h3 class="project-title">Boutique en ligne</h3><div class="project-description">E-commerce personnalisé avec une expérience simple pour les clients, un catalogue lisible et un suivi des commandes.</div><div class="project-meta"><div class="meta-col"><span class="meta-label">Budget</span><span class="meta-value">2 800 DH</span></div><div class="meta-col"><span class="meta-label">Création</span><span class="meta-value">28-06-2026</span></div></div><div class="project-actions"><div class="action-left"><a class="btn btn-soft" href="javascript:void(0)">Voir</a></div><div class="action-right"><a class="btn btn-primary" href="javascript:void(0)">Modifier</a></div></div></div></div>
++        </div>
++
++        <div class="media"><div class="media-label">ProjetHub</div><div class="media-sub">Un layout frontend plus visuel, avec un esprit dashboard, tout en restant en HTML4 statique.</div></div>
++    </div>
++</div>
++</body>
++</html>
