@@ -1,24 +1,49 @@
 <?php
-require_once __DIR__ . '/controllers/ProjetController.php';
+// Simple Router
+session_start();
 
-$controller = new ProjetController();
+$request = $_GET['action'] ?? 'home';
+$method = $_GET['method'] ?? 'view';
 
-$action = isset($_GET['action']) ? $_GET['action'] : 'list';
+// Handle logout
+if ($request === 'logout') {
+    session_destroy();
+    header('Location: ?action=home');
+    exit;
+}
 
-switch ($action) {
-    case 'list':
-        $controller->listAction();
+// Route handling
+switch ($request) {
+    case 'login':
+        require 'Views/Frontoffice/login.php';
         break;
-    case 'add':
-        $controller->addAction();
+    case 'register':
+        require 'Views/Frontoffice/register.php';
         break;
-    case 'edit':
-        $controller->editAction();
+    case 'profile':
+        require 'Views/Frontoffice/profile.php';
         break;
-    case 'delete':
-        $controller->deleteAction();
+    case 'projects':
+        require 'Views/Frontoffice/projects.php';
         break;
+    case 'projectdashboard':
+        require 'Views/Backoffice/projectDashboard.php';
+        break;
+    case 'projectlist':
+        require 'Views/Backoffice/projectList.php';
+        break;
+    case 'userlist':
+        require 'Views/Backoffice/userList.php';
+        break;
+    case 'adduser':
+        require 'Views/Backoffice/addUser.php';
+        break;
+    case 'edituser':
+        require 'Views/Backoffice/editUser.php';
+        break;
+    case 'home':
     default:
-        $controller->listAction();
+        require 'Views/Frontoffice/home.php';
         break;
 }
+?>
