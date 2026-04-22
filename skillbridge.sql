@@ -21,6 +21,11 @@ CREATE TABLE `User` (
   `is_approved` tinyint(1) DEFAULT 0,
   `availability` varchar(50) DEFAULT 'available',
   `rating` decimal(3,2) DEFAULT 0.00,
+  `phone` varchar(30) DEFAULT NULL,
+  `bio` text DEFAULT NULL,
+  `profile_picture` varchar(255) DEFAULT NULL,
+  `skill_summary` varchar(255) DEFAULT NULL,
+  `experience_description` text DEFAULT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)

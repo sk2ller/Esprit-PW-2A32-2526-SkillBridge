@@ -3,8 +3,13 @@ require_once __DIR__ . '/../../Controllers/UserController.php';
 require_once __DIR__ . '/../../Models/User.php';
 
 $userController = new UserController();
-$error = '';
+$errors = [];
 $success = '';
+
+function isValidRegisterName($value)
+{
+    return (bool) preg_match("/^[a-zA-ZÃ€-Ã¿][a-zA-ZÃ€-Ã¿' -]{1,49}$/u", $value);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nom = trim($_POST['nom'] ?? '');
@@ -12,28 +17,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
-    $niveau = $_POST['niveau'] ?? 'débutant';
-    $role = (int)($_POST['id_role'] ?? 2);
+    $niveau = $_POST['niveau'] ?? 'dÃ©butant';
+    $role = (int) ($_POST['id_role'] ?? 2);
 
-    // Validation
-    if (!$nom || !$prenom || !$email || !$password || !$confirmPassword) {
-        $error = 'All fields are required.';
+    if (!$nom) {
+        $errors['nom'] = 'Last name is required.';
+    } elseif (!isValidRegisterName($nom)) {
+        $errors['nom'] = 'Last name cannot contain numbers. Use only letters, spaces, apostrophes, or hyphens.';
+    }
+    if (!$prenom) {
+        $errors['prenom'] = 'First name is required.';
+    } elseif (!isValidRegisterName($prenom)) {
+        $errors['prenom'] = 'First name cannot contain numbers. Use only letters, spaces, apostrophes, or hyphens.';
+    }
+    if (!$email) {
+        $errors['email'] = 'Email is required.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Invalid email format.';
-    } elseif (strlen($password) < 8) {
-        $error = 'Password must be at least 8 characters long.';
-    } elseif ($password !== $confirmPassword) {
-        $error = 'Passwords do not match.';
+        $errors['email'] = 'Invalid email format.';
     } elseif ($userController->emailExists($email)) {
-        $error = 'This email is already in use.';
-    } else {
-        // Create user with role-based approval
-        // Clients auto-approved, Freelancers need admin approval
+        $errors['email'] = 'This email is already in use.';
+    }
+    if (!$password) {
+        $errors['password'] = 'Password is required.';
+    } elseif (strlen($password) < 8) {
+        $errors['password'] = 'Password must be at least 8 characters long.';
+    }
+    if (!$confirmPassword) {
+        $errors['confirm_password'] = 'Password confirmation is required.';
+    } elseif ($password !== '' && $password !== $confirmPassword) {
+        $errors['confirm_password'] = 'Passwords do not match.';
+    }
+
+    if ($role !== 3) {
+        $niveau = 'dÃ©butant';
+    }
+
+    if (empty($errors)) {
         $isApproved = ($role == 2) ? 1 : 0;
-        
+
         $user = new User($nom, $prenom, $email, $password, $niveau, $role, 0, $isApproved);
         $userController->addUser($user);
-        
+
         if ($role == 3) {
             $success = 'Sign up successful! Your profile is pending approval. We will get back to you within 24-48 hours.';
         } else {
@@ -161,7 +185,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--text-light);
         }
 
-        /* ROLE SELECTOR */
+        .field-error {
+            color: #c33;
+            font-size: 0.82rem;
+            margin-top: 0.45rem;
+        }
+
         .role-selector {
             margin-bottom: 1.5rem;
         }
@@ -223,6 +252,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .role-desc {
             font-size: 0.8rem;
             color: var(--text-light);
+        }
+
+        .experience-group {
+            overflow: hidden;
+            transition: opacity 0.25s ease, transform 0.25s ease, max-height 0.25s ease, margin 0.25s ease;
+        }
+
+        .experience-group.is-hidden {
+            opacity: 0;
+            transform: translateY(-8px);
+            max-height: 0;
+            margin: 0;
+            pointer-events: none;
         }
 
         .btn-register {
@@ -346,13 +388,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Join SkillBridge and start your journey</p>
             </div>
 
-            <?php if ($error): ?>
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle mt-1"></i>
-                <span><?= htmlspecialchars($error) ?></span>
-            </div>
-            <?php endif; ?>
-
             <?php if ($success): ?>
             <div class="alert alert-success">
                 <i class="fas fa-check-circle mt-1"></i>
@@ -365,38 +400,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php else: ?>
 
             <form method="POST" action="">
-                <!-- Names -->
                 <div class="form-row">
                     <div class="form-group">
                         <label for="nom">Last Name</label>
-                        <input type="text" id="nom" name="nom" placeholder="Your last name">
+                        <input type="text" id="nom" name="nom" placeholder="Your last name" value="<?= htmlspecialchars($nom ?? '') ?>">
+                        <?php if (!empty($errors['nom'])): ?><div class="field-error"><?= htmlspecialchars($errors['nom']) ?></div><?php endif; ?>
                     </div>
                     <div class="form-group">
                         <label for="prenom">First Name</label>
-                        <input type="text" id="prenom" name="prenom" placeholder="Your first name">
+                        <input type="text" id="prenom" name="prenom" placeholder="Your first name" value="<?= htmlspecialchars($prenom ?? '') ?>">
+                        <?php if (!empty($errors['prenom'])): ?><div class="field-error"><?= htmlspecialchars($errors['prenom']) ?></div><?php endif; ?>
                     </div>
                 </div>
 
-                <!-- Email -->
                 <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input type="text" id="email" name="email" placeholder="you@example.com">
+                    <input type="text" id="email" name="email" placeholder="you@example.com" value="<?= htmlspecialchars($email ?? '') ?>">
+                    <?php if (!empty($errors['email'])): ?><div class="field-error"><?= htmlspecialchars($errors['email']) ?></div><?php endif; ?>
                 </div>
 
-                <!-- Role Selection -->
                 <div class="role-selector">
                     <label class="role-label-title">I want to</label>
                     <div class="role-options">
-                        <label class="role-option active">
-                            <input type="radio" name="id_role" value="2" checked onchange="updateRole(this)">
+                        <label class="role-option <?= ((int) ($role ?? 2) === 2) ? 'active' : '' ?>">
+                            <input type="radio" name="id_role" value="2" <?= ((int) ($role ?? 2) === 2) ? 'checked' : '' ?> onchange="updateRole(this)">
                             <div class="role-content">
                                 <div class="role-icon">👤</div>
                                 <span class="role-name">Client</span>
                                 <div class="role-desc">Find freelancers</div>
                             </div>
                         </label>
-                        <label class="role-option">
-                            <input type="radio" name="id_role" value="3" onchange="updateRole(this)">
+                        <label class="role-option <?= ((int) ($role ?? 2) === 3) ? 'active' : '' ?>">
+                            <input type="radio" name="id_role" value="3" <?= ((int) ($role ?? 2) === 3) ? 'checked' : '' ?> onchange="updateRole(this)">
                             <div class="role-content">
                                 <div class="role-icon">💼</div>
                                 <span class="role-name">Freelancer</span>
@@ -406,25 +441,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
-                <!-- Experience Level -->
-                <div class="form-group">
+                <div class="form-group experience-group <?= ((int) ($role ?? 2) === 3) ? '' : 'is-hidden' ?>" id="experienceGroup">
                     <label for="niveau">Experience Level</label>
                     <select id="niveau" name="niveau">
-                        <option value="débutant">Beginner</option>
-                        <option value="intermédiaire">Intermediate</option>
-                        <option value="expert">Expert</option>
+                        <option value="dÃ©butant" <?= (($niveau ?? 'dÃ©butant') === 'dÃ©butant') ? 'selected' : '' ?>>Beginner</option>
+                        <option value="intermÃ©diaire" <?= (($niveau ?? '') === 'intermÃ©diaire') ? 'selected' : '' ?>>Intermediate</option>
+                        <option value="expert" <?= (($niveau ?? '') === 'expert') ? 'selected' : '' ?>>Expert</option>
                     </select>
                 </div>
 
-                <!-- Passwords -->
                 <div class="form-row">
                     <div class="form-group">
                         <label for="password">Password</label>
                         <input type="password" id="password" name="password" placeholder="Min. 8 characters">
+                        <?php if (!empty($errors['password'])): ?><div class="field-error"><?= htmlspecialchars($errors['password']) ?></div><?php endif; ?>
                     </div>
                     <div class="form-group">
                         <label for="confirm_password">Confirm</label>
                         <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm password">
+                        <?php if (!empty($errors['confirm_password'])): ?><div class="field-error"><?= htmlspecialchars($errors['confirm_password']) ?></div><?php endif; ?>
                     </div>
                 </div>
 
@@ -446,8 +481,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>
         function updateRole(radio) {
             const options = document.querySelectorAll('.role-option');
-            options.forEach(opt => opt.classList.remove('active'));
+            const experienceGroup = document.getElementById('experienceGroup');
+            const niveauSelect = document.getElementById('niveau');
+
+            options.forEach(function(opt) {
+                opt.classList.remove('active');
+            });
+
             radio.closest('.role-option').classList.add('active');
+
+            if (radio.value === '3') {
+                experienceGroup.classList.remove('is-hidden');
+            } else {
+                experienceGroup.classList.add('is-hidden');
+                if (niveauSelect) {
+                    niveauSelect.value = 'dÃ©butant';
+                }
+            }
         }
     </script>
 

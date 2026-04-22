@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../../Controllers/UserController.php';
 $role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
+$heroVideoSrc = '/Views/assets/img/hero-showcase.mp4';
+$heroVideoPoster = '/Views/assets/img/logo1.png';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -89,39 +91,63 @@ $role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
 
         /* HERO SECTION */
         .hero {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
             color: white;
-            padding: 7rem 2rem;
+            padding: 0;
             position: relative;
             overflow: hidden;
+            min-height: 84vh;
+            background: #101010;
+            display: flex;
+            align-items: stretch;
+        }
+
+        .hero .container {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            display: flex;
+            align-items: center;
         }
 
         .hero::before {
             content: '';
             position: absolute;
-            top: -40%;
-            right: -5%;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(224, 112, 32, 0.15) 0%, transparent 70%);
-            border-radius: 50%;
+            inset: 0;
+            background:
+                linear-gradient(90deg, rgba(8, 8, 8, 0.9) 0%, rgba(8, 8, 8, 0.76) 30%, rgba(8, 8, 8, 0.52) 54%, rgba(8, 8, 8, 0.68) 100%),
+                linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.42) 100%);
+            z-index: 1;
         }
 
         .hero::after {
             content: '';
             position: absolute;
-            bottom: -20%;
-            left: -5%;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(224, 112, 32, 0.1) 0%, transparent 70%);
+            left: -7%;
+            bottom: -18%;
+            width: 440px;
+            height: 440px;
+            background: radial-gradient(circle, rgba(224, 112, 32, 0.22) 0%, rgba(224, 112, 32, 0.08) 42%, transparent 72%);
             border-radius: 50%;
+            z-index: 2;
         }
 
         .hero-content {
-            position: relative;
-            z-index: 2;
             max-width: 650px;
+            padding: 6.5rem 0;
+        }
+
+        .hero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.65rem 1rem;
+            margin-bottom: 1.4rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            backdrop-filter: blur(10px);
+            font-size: 0.9rem;
+            font-weight: 600;
         }
 
         .hero h1 {
@@ -136,12 +162,83 @@ $role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
             color: rgba(255,255,255,0.9);
             margin-bottom: 2rem;
             line-height: 1.6;
+            max-width: 560px;
         }
 
         .hero-buttons {
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
+        }
+
+        .hero-video-shell {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .hero-video-card {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hero-video-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(10, 10, 10, 0.08) 0%, rgba(10, 10, 10, 0.32) 100%);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .hero-video {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+            background: #111;
+        }
+
+        .hero-video-caption {
+            position: absolute;
+            right: 2rem;
+            bottom: 2rem;
+            z-index: 4;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 45%, transparent 72%);
+            pointer-events: none;
+        }
+
+        .hero-video-fallback {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding: 2rem;
+            text-align: center;
+            z-index: 3;
+            background: linear-gradient(135deg, rgba(224, 112, 32, 0.2) 0%, rgba(17, 17, 17, 0.85) 100%);
+        }
+
+        .hero-video-fallback.show {
+            display: flex;
+        }
+
+        .hero-video-fallback i {
+            font-size: 2.5rem;
+            color: #fff;
+        }
+
+        .hero-video-fallback p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.95rem;
         }
 
         .btn-hero {
@@ -321,7 +418,7 @@ $role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .hero {
-                padding: 4rem 1.5rem;
+                min-height: 76vh;
             }
 
             .hero h1 {
@@ -339,6 +436,17 @@ $role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
             .btn-hero {
                 width: 100%;
                 text-align: center;
+            }
+
+            .hero-content {
+                padding: 5rem 0 3rem;
+            }
+
+            .hero-video-caption {
+                right: -1.5rem;
+                bottom: 1rem;
+                width: 120px;
+                height: 120px;
             }
 
             .section-default {
@@ -410,8 +518,27 @@ $role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
 
     <!-- HERO SECTION -->
     <section class="hero">
+        <div class="hero-video-shell">
+            <div class="hero-video-card">
+                <video class="hero-video" autoplay muted loop playsinline preload="metadata" poster="<?= htmlspecialchars($heroVideoPoster) ?>" id="heroVideo">
+                    <source src="<?= htmlspecialchars($heroVideoSrc) ?>" type="video/mp4">
+                </video>
+
+                <div class="hero-video-fallback" id="heroVideoFallback">
+                    <i class="fas fa-video"></i>
+                    <p>Add your hero video at <strong><?= htmlspecialchars($heroVideoSrc) ?></strong> to display it here.</p>
+                </div>
+
+                <div class="hero-video-caption">
+                </div>
+            </div>
+        </div>
         <div class="container">
             <div class="hero-content">
+                <div class="hero-kicker">
+                    <i class="fas fa-bolt"></i>
+                    <span>Trusted talent, ready to build</span>
+                </div>
                 <h1>Connect With Top Talent</h1>
                 <p>Discover skilled freelancers or offer your expertise. SkillBridge connects you with the perfect match for every project.</p>
                 <div class="hero-buttons">
@@ -563,5 +690,19 @@ $role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const heroVideo = document.getElementById('heroVideo');
+        const heroVideoFallback = document.getElementById('heroVideoFallback');
+
+        if (heroVideo && heroVideoFallback) {
+            heroVideo.addEventListener('error', function() {
+                heroVideoFallback.classList.add('show');
+            });
+
+            heroVideo.addEventListener('loadeddata', function() {
+                heroVideoFallback.classList.remove('show');
+            });
+        }
+    </script>
 </body>
 </html>

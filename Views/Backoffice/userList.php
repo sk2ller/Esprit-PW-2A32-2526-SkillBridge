@@ -147,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         if (!isValidUserListName($nom) || !isValidUserListName($prenom)) {
-            echo json_encode(['success' => false, 'message' => 'Le nom et le prénom doivent contenir uniquement des lettres, espaces, apostrophes ou tirets']);
+            echo json_encode(['success' => false, 'message' => 'Le nom et le prénom ne doivent pas contenir de chiffres. Utilisez uniquement des lettres, espaces, apostrophes ou tirets']);
             exit;
         }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 100) {
@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         if (!isValidUserListName($nom) || !isValidUserListName($prenom)) {
-            echo json_encode(['success' => false, 'message' => 'Le nom et le prénom doivent contenir uniquement des lettres, espaces, apostrophes ou tirets']);
+            echo json_encode(['success' => false, 'message' => 'Le nom et le prénom ne doivent pas contenir de chiffres. Utilisez uniquement des lettres, espaces, apostrophes ou tirets']);
             exit;
         }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 100) {
@@ -645,11 +645,65 @@ if (filterApproved) {
     filterApproved.addEventListener('change', applyFilter);
 }
 
+function clearFormFieldErrors(form) {
+    form.querySelectorAll('.field-error').forEach(function(node) {
+        node.remove();
+    });
+}
+
+function appendFieldError(input, message) {
+    const error = document.createElement('div');
+    error.className = 'text-danger small mt-1 field-error';
+    error.textContent = message;
+    input.insertAdjacentElement('afterend', error);
+}
+
+function showMappedFieldErrors(form, message) {
+    const nomInput = form.querySelector('[name="nom"]');
+    const prenomInput = form.querySelector('[name="prenom"]');
+    const emailInput = form.querySelector('[name="email"]');
+    const passwordInput = form.querySelector('[name="password"]');
+
+    if (message.indexOf('Tous les champs sont obligatoires') !== -1) {
+        [nomInput, prenomInput, emailInput, passwordInput].forEach(function(input) {
+            if (input && input.value.trim() === '') {
+                appendFieldError(input, 'Ce champ est obligatoire');
+            }
+        });
+        return true;
+    }
+
+    if (message.indexOf('Le nom et le prénom doivent contenir') !== -1) {
+        if (nomInput) appendFieldError(nomInput, 'Le nom ne doit pas contenir de chiffres');
+        if (prenomInput) appendFieldError(prenomInput, 'Le prénom ne doit pas contenir de chiffres');
+        return true;
+    }
+
+    if (message.indexOf("L'email n'est pas valide") !== -1) {
+        if (emailInput) appendFieldError(emailInput, 'Email invalide');
+        return true;
+    }
+
+    if (message.indexOf('Cet email est') !== -1) {
+        if (emailInput) appendFieldError(emailInput, message);
+        return true;
+    }
+
+    if (message.indexOf('Le mot de passe doit contenir') !== -1 && passwordInput) {
+        appendFieldError(passwordInput, message);
+        return true;
+    }
+
+    return false;
+}
+
 document.getElementById('addUserForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
     const msg = document.getElementById('addUserMsg');
 
+    clearFormFieldErrors(this);
+    msg.innerHTML = '';
     formData.append('action', 'add');
     
     fetch('?action=userlist', {
@@ -661,7 +715,7 @@ document.getElementById('addUserForm').addEventListener('submit', function(e) {
         if (data.success) {
             msg.innerHTML = '<div class="alert alert-success">âœ“ ' + data.message + '</div>';
             setTimeout(() => location.reload(), 1500);
-        } else {
+        } else if (!showMappedFieldErrors(this, data.message || '')) {
             msg.innerHTML = '<div class="alert alert-danger">âœ— ' + data.message + '</div>';
         }
     });
@@ -691,6 +745,8 @@ document.getElementById('editUserForm').addEventListener('submit', function(e) {
     const formData = new FormData(this);
     const msg = document.getElementById('editUserMsg');
 
+    clearFormFieldErrors(this);
+    msg.innerHTML = '';
     formData.append('action', 'edit');
     
     fetch('?action=userlist', { method: 'POST', body: formData })
@@ -699,12 +755,11 @@ document.getElementById('editUserForm').addEventListener('submit', function(e) {
         if (data.success) {
             msg.innerHTML = '<div class="alert alert-success">âœ“ ' + data.message + '</div>';
             setTimeout(() => location.reload(), 1500);
-        } else {
+        } else if (!showMappedFieldErrors(this, data.message || '')) {
             msg.innerHTML = '<div class="alert alert-danger">âœ— ' + data.message + '</div>';
         }
     });
 });
-
 function deleteUser(id) {
     if (confirm('ÃŠtes-vous sÃ»r de vouloir supprimer cet utilisateur ?')) {
         const formData = new FormData();
@@ -826,6 +881,10 @@ if (showSidebarBtn) {
 
 </body>
 </html>
+
+
+
+
 
 
 

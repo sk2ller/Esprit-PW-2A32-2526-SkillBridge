@@ -1,30 +1,33 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../../Controllers/UserController.php';
 require_once __DIR__ . '/../../Controllers/JWT.php';
 
 $userController = new UserController();
-$error = '';
+$errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (empty($email) || empty($password)) {
-        $error = 'All fields are required.';
+    if ($email === '') {
+        $errors['email'] = 'Email is required.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Invalid email format.';
-    } else {
+        $errors['email'] = 'Invalid email format.';
+    }
+
+    if ($password === '') {
+        $errors['password'] = 'Password is required.';
+    }
+
+    if (empty($errors)) {
         $user = $userController->authenticate($email, $password);
-        
+
         if ($user) {
-            // Check if freelancer is approved
             if ($user->getIdRole() == 3 && !$user->getIsApproved()) {
-                $error = 'Your account is pending approval by an administrator.';
+                $errors['email'] = 'Your account is pending approval by an administrator.';
             } else {
-                // Generate JWT token
                 $jwt = JWT::generateToken($user->getIdUser(), $user->getEmail(), $user->getIdRole());
-                
-                // Set session
+
                 session_regenerate_id(true);
                 $_SESSION['user_id'] = $user->getIdUser();
                 $_SESSION['user_nom'] = $user->getNom();
@@ -32,15 +35,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_email'] = $user->getEmail();
                 $_SESSION['user_role'] = $user->getIdRole();
                 $_SESSION['jwt'] = $jwt;
-                
-                // Set HTTP-only cookie
+
                 setcookie('jwt', $jwt, time() + 86400, '/', '', false, true);
-                
+
                 header('Location: ?action=home');
                 exit;
             }
         } else {
-            $error = 'Invalid email or password.';
+            $errors['password'] = 'Invalid email or password.';
         }
     }
 }
@@ -200,6 +202,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--text-light);
         }
 
+        .field-error {
+            color: #c33;
+            font-size: 0.82rem;
+            margin-top: 0.45rem;
+        }
+
         .btn-login {
             width: 100%;
             padding: 0.9rem;
@@ -222,22 +230,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .btn-login:active {
             transform: translateY(0);
-        }
-
-        .alert {
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            font-size: 0.9rem;
-        }
-
-        .alert-danger {
-            background: #fee;
-            border: 1px solid #fcc;
-            color: #c33;
         }
 
         .auth-footer {
@@ -310,33 +302,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Sign in to your SkillBridge account</p>
             </div>
 
-            <?php if ($error): ?>
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle mt-1"></i>
-                <span><?= htmlspecialchars($error) ?></span>
-            </div>
-            <?php endif; ?>
-
             <form method="POST" action="">
                 <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input 
-                        type="text" 
-                        id="email" 
-                        name="email" 
-                        placeholder="you@example.com" 
+                    <input
+                        type="text"
+                        id="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        value="<?= htmlspecialchars($email ?? '') ?>"
                         autofocus
                     >
+                    <?php if (!empty($errors['email'])): ?><div class="field-error"><?= htmlspecialchars($errors['email']) ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        placeholder="••••••••"
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="........"
                     >
+                    <?php if (!empty($errors['password'])): ?><div class="field-error"><?= htmlspecialchars($errors['password']) ?></div><?php endif; ?>
                 </div>
 
                 <button type="submit" class="btn-login">

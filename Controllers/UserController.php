@@ -94,8 +94,10 @@ class UserController
             $row['nom'] ?? null, $row['prenom'] ?? null, $row['email'] ?? null,
             $row['mot_de_passe'] ?? null, $row['niveau'] ?? 'débutant', 
             $row['id_role'] ?? 2, $row['badge_verifie'] ?? 0,
-            $row['is_approved'] ?? 0, $row['is_banned'] ?? 0, $row['availability'] ?? 'available', 
-            $row['rating'] ?? 0.00
+            $row['is_approved'] ?? 0, $row['is_banned'] ?? 0, $row['availability'] ?? 'available',
+            $row['rating'] ?? 0.00, $row['phone'] ?? null, $row['bio'] ?? null,
+            $row['profile_picture'] ?? null, $row['skill_summary'] ?? null,
+            $row['experience_description'] ?? null
         );
         $user->setIdUser($row['id']);
         $user->setCreatedAt($row['created_at'] ?? null);
@@ -107,8 +109,12 @@ class UserController
     public function updateUser(User $user)
     {
         $sql = "UPDATE User SET nom=:nom, prenom=:prenom, email=:email,
-                niveau=:niveau, id_role=:id_role, availability=:availability, 
-                rating=:rating WHERE id=:id";
+                niveau=:niveau, id_role=:id_role, availability=:availability,
+                rating=:rating, phone=COALESCE(:phone, phone), bio=COALESCE(:bio, bio),
+                profile_picture=COALESCE(:profile_picture, profile_picture),
+                skill_summary=COALESCE(:skill_summary, skill_summary),
+                experience_description=COALESCE(:experience_description, experience_description)
+                WHERE id=:id";
         $db = Config::getConnexion();
         try {
             $query = $db->prepare($sql);
@@ -120,6 +126,11 @@ class UserController
                 'id_role'      => $user->getIdRole(),
                 'availability' => $user->getAvailability(),
                 'rating'       => $user->getRating(),
+                'phone'        => $user->getPhone(),
+                'bio'          => $user->getBio(),
+                'profile_picture' => $user->getProfilePicture(),
+                'skill_summary' => $user->getSkillSummary(),
+                'experience_description' => $user->getExperienceDescription(),
                 'id'           => $user->getIdUser(),
             ]);
             return true;
@@ -209,6 +220,10 @@ class UserController
         if (!empty($filters['availability'])) {
             $sql .= " AND availability = :availability";
             $params[':availability'] = $filters['availability'];
+        }
+        if (isset($filters['min_rating']) && $filters['min_rating'] !== '') {
+            $sql .= " AND rating >= :min_rating";
+            $params[':min_rating'] = (float) $filters['min_rating'];
         }
         if (!empty($filters['search'])) {
             $search = '%' . $filters['search'] . '%';

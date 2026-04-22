@@ -8,11 +8,16 @@ class User
     private $mot_de_passe;
     private $niveau;
     private $id_role;
-    private $badge_verifie;
+    private $badge_ve0rifie;
     private $is_approved;
     private $is_banned;
     private $availability;
     private $rating;
+    private $phone;
+    private $bio;
+    private $profile_picture;
+    private $skill_summary;
+    private $experience_description;
     private $created_at;
     private $updated_at;
 
@@ -27,7 +32,12 @@ class User
         $is_approved = 0,
         $is_banned = 0,
         $availability = 'available',
-        $rating = 0.00
+        $rating = 0.00,
+        $phone = null,
+        $bio = null,
+        $profile_picture = null,
+        $skill_summary = null,
+        $experience_description = null
     ) {
         $this->nom           = $nom;
         $this->prenom        = $prenom;
@@ -40,6 +50,11 @@ class User
         $this->is_banned     = $is_banned;
         $this->availability  = $availability;
         $this->rating        = $rating;
+        $this->phone         = $phone;
+        $this->bio           = $bio;
+        $this->profile_picture = $profile_picture;
+        $this->skill_summary = $skill_summary;
+        $this->experience_description = $experience_description;
     }
 
     // Getters and Setters
@@ -78,6 +93,21 @@ class User
 
     public function getRating()                { return $this->rating; }
     public function setRating($r)              { $this->rating = $r; }
+
+    public function getPhone()                 { return $this->phone; }
+    public function setPhone($phone)           { $this->phone = $phone; }
+
+    public function getBio()                   { return $this->bio; }
+    public function setBio($bio)               { $this->bio = $bio; }
+
+    public function getProfilePicture()        { return $this->profile_picture; }
+    public function setProfilePicture($picture){ $this->profile_picture = $picture; }
+
+    public function getSkillSummary()          { return $this->skill_summary; }
+    public function setSkillSummary($summary)  { $this->skill_summary = $summary; }
+
+    public function getExperienceDescription() { return $this->experience_description; }
+    public function setExperienceDescription($description) { $this->experience_description = $description; }
 
     public function getCreatedAt()             { return $this->created_at; }
     public function setCreatedAt($c)           { $this->created_at = $c; }
