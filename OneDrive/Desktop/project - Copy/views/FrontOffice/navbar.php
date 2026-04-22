@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= $pageTitle ?? 'Geeks Services' ?></title>
+<title><?= $pageTitle ?? 'SkillBridge Services' ?></title>
 <link rel="stylesheet" href="views/assets/css/front.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
@@ -18,7 +18,8 @@ $allCategories = $categorieController->listCategories();
 
 <nav class="navbar">
   <a href="index.php" class="navbar-brand">
-    <img src="views/assets/images/logo.png" alt="Geeks Services" style="height: 40px; width: auto;">
+    <span class="logo-icon"><i class="fas fa-bolt"></i></span>
+    <span>SkillBridge <span>Services</span></span>
   </a>
 
   <ul class="navbar-nav">

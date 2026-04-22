@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= $pageTitle ?? 'Admin - Geeks' ?></title>
+<title><?= $pageTitle ?? 'Admin - SkillBridge' ?></title>
 <link rel="stylesheet" href="views/assets/css/admin.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
@@ -20,8 +20,9 @@ $currentPage = $_GET['page'] ?? '';
 
 <aside class="admin-sidebar">
   <div class="sidebar-brand">
-    <img src="views/assets/images/logo.png" alt="Geeks Admin" style="height: 50px; width: auto;">
+    <div class="logo"><i class="fas fa-bolt"></i></div>
     <div>
+      <div class="brand-text">SkillBridge Admin</div>
       <div class="brand-sub">Back Office</div>
     </div>
   </div>

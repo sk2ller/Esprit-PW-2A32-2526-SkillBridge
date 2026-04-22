@@ -52,7 +52,13 @@ include __DIR__ . '/navbar.php';
     <?php foreach ($services as $s): ?>
     <div class="service-card">
       <div class="service-card-image">
+        <?php if (!empty($s['thumbnail'])): ?>
+        <img src="views/assets/uploads/<?= htmlspecialchars($s['thumbnail']) ?>"
+             alt="<?= htmlspecialchars($s['titre']) ?>"
+             style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;">
+        <?php else: ?>
         <i class="fas fa-briefcase" style="color:rgba(255,255,255,0.15); font-size:3rem; position:relative; z-index:1;"></i>
+        <?php endif; ?>
         <div style="position:absolute; top:10px; right:10px;">
           <?php
           $badgeMap = ['actif'=>'badge-actif','suspendu'=>'badge-suspendu','en_attente'=>'badge-pending'];
