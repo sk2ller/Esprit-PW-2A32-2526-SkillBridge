@@ -1,97 +1,223 @@
 <?php
-require_once __DIR__ . '/../models/Produit.php';
-require_once __DIR__ . '/../models/CategorieProduit.php';
+require_once(__DIR__ . '/../config.php');
+require_once(__DIR__ . '/../models/Produit.php');
+require_once(__DIR__ . '/../models/CategorieProduit.php');
 
+// Contrôleur pour gérer les opérations CRUD sur les produits
 class ProduitController {
-    private $produitModel;
-    private $categorieModel;
 
-    public function __construct() {
-        $this->produitModel = new Produit();
-        $this->categorieModel = new CategorieProduit();
-    }
+    // Récupérer tous les produits avec filtres optionnels
+    public function listProduits($statut = null, $id_categorie = null, $search = null) {
+        $sql = "SELECT p.*, c.nom_categorie
+                FROM produit p
+                JOIN categorie_produit c ON p.id_categorie = c.id_categorie
+                WHERE 1=1";
+        $params = [];
 
-    // FrontOffice : liste des produits disponibles
-    public function index() {
-        $search = $_GET['search'] ?? null;
-        $id_categorie = $_GET['categorie'] ?? null;
-        $produits = $this->produitModel->getAll('disponible', $id_categorie, $search);
-        $categories = $this->categorieModel->getAll();
-        require_once __DIR__ . '/../views/FrontOffice/client/produits_list.php';
-    }
+        if ($statut) {
+            $sql .= " AND p.statut = :statut";
+            $params[':statut'] = $statut;
+        }
+        if ($id_categorie) {
+            $sql .= " AND p.id_categorie = :id_categorie";
+            $params[':id_categorie'] = $id_categorie;
+        }
+        if ($search) {
+            $sql .= " AND (p.nom LIKE :search OR p.description LIKE :search2)";
+            $params[':search'] = "%$search%";
+            $params[':search2'] = "%$search%";
+        }
+        $sql .= " ORDER BY p.created_at DESC";
 
-    // FrontOffice : détail d'un produit
-    public function show($id) {
-        $produit = $this->produitModel->getById($id);
-        if (!$produit) { header("Location: index.php?page=produits"); exit; }
-        require_once __DIR__ . '/../views/FrontOffice/client/produit_detail.php';
-    }
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute($params);
+            $rows = $query->fetchAll(PDO::FETCH_ASSOC);
 
-    // Vendeur : mes produits
-    public function mesProduits() {
-        $produits = $this->produitModel->getAllForVendeur();
-        $categories = $this->categorieModel->getAll();
-        require_once __DIR__ . '/../views/FrontOffice/vendeur/mes_produits.php';
-    }
-
-    // Vendeur : formulaire création
-    public function create() {
-        $categories = $this->categorieModel->getAll();
-        $error = null;
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if (empty($_POST['nom']) || empty($_POST['description']) || empty($_POST['prix'])) {
-                $error = "Tous les champs obligatoires doivent être remplis.";
-            } else {
-                $data = [
-                    'nom' => htmlspecialchars($_POST['nom']),
-                    'description' => htmlspecialchars($_POST['description']),
-                    'prix' => (float)$_POST['prix'],
-                    'quantite' => (int)$_POST['quantite'],
-                    'id_categorie' => (int)$_POST['id_categorie']
-                ];
-                $id = $this->produitModel->create($data);
-                header("Location: index.php?page=mes_produits&success=1"); exit;
+            $produits = [];
+            foreach ($rows as $row) {
+                $produit = new Produit(
+                    $row['nom'],
+                    $row['description'],
+                    $row['prix'],
+                    $row['quantite'],
+                    $row['statut'],
+                    $row['image'],
+                    $row['id_categorie']
+                );
+                $produit->setId($row['id_produit']);
+                $produit->setCreatedAt($row['created_at']);
+                $produit->setUpdatedAt($row['updated_at']);
+                $produit->setNomCategorie($row['nom_categorie']);
+                $produits[] = $produit;
             }
+            return $produits;
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+            return [];
         }
-        require_once __DIR__ . '/../views/FrontOffice/vendeur/produit_form.php';
     }
 
-    // Vendeur : modifier un produit
-    public function edit($id) {
-        $produit = $this->produitModel->getById($id);
-        $categories = $this->categorieModel->getAll();
-        $error = null;
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $data = [
-                'nom' => htmlspecialchars($_POST['nom']),
-                'description' => htmlspecialchars($_POST['description']),
-                'prix' => (float)$_POST['prix'],
-                'quantite' => (int)$_POST['quantite'],
-                'id_categorie' => (int)$_POST['id_categorie']
-            ];
-            $this->produitModel->update($id, $data);
-            header("Location: index.php?page=mes_produits&success=2"); exit;
+    // Récupérer un produit par son ID (avec catégorie)
+    public function getProduitById($id) {
+        $sql = "SELECT p.*, c.nom_categorie
+                FROM produit p
+                JOIN categorie_produit c ON p.id_categorie = c.id_categorie
+                WHERE p.id_produit = :id";
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([':id' => $id]);
+            $row = $query->fetch(PDO::FETCH_ASSOC);
+
+            if ($row) {
+                $produit = new Produit(
+                    $row['nom'],
+                    $row['description'],
+                    $row['prix'],
+                    $row['quantite'],
+                    $row['statut'],
+                    $row['image'],
+                    $row['id_categorie']
+                );
+                $produit->setId($row['id_produit']);
+                $produit->setCreatedAt($row['created_at']);
+                $produit->setUpdatedAt($row['updated_at']);
+                $produit->setNomCategorie($row['nom_categorie']);
+                return $produit;
+            }
+            return null;
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+            return null;
         }
-        require_once __DIR__ . '/../views/FrontOffice/vendeur/produit_form.php';
     }
 
-    // Vendeur : supprimer
-    public function delete($id) {
-        $this->produitModel->delete($id);
-        header("Location: index.php?page=mes_produits&success=3"); exit;
+    // Récupérer tous les produits (pour vendeur)
+    public function listProduitsVendeur() {
+        $sql = "SELECT p.*, c.nom_categorie FROM produit p
+                JOIN categorie_produit c ON p.id_categorie = c.id_categorie
+                ORDER BY p.created_at DESC";
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute();
+            $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+
+            $produits = [];
+            foreach ($rows as $row) {
+                $produit = new Produit(
+                    $row['nom'],
+                    $row['description'],
+                    $row['prix'],
+                    $row['quantite'],
+                    $row['statut'],
+                    $row['image'],
+                    $row['id_categorie']
+                );
+                $produit->setId($row['id_produit']);
+                $produit->setCreatedAt($row['created_at']);
+                $produit->setUpdatedAt($row['updated_at']);
+                $produit->setNomCategorie($row['nom_categorie']);
+                $produits[] = $produit;
+            }
+            return $produits;
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+            return [];
+        }
     }
 
-    // Admin : liste tous les produits
-    public function adminIndex() {
-        $produits = $this->produitModel->getAll();
-        $stats = $this->produitModel->getStats();
-        require_once __DIR__ . '/../views/BackOffice/admin/produits.php';
+    // Ajouter un nouveau produit
+    public function addProduit(Produit $produit) {
+        $sql = "INSERT INTO produit (nom, description, prix, quantite, statut, id_categorie)
+                VALUES (:nom, :description, :prix, :quantite, 'en_attente', :id_categorie)";
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([
+                ':nom' => $produit->getNom(),
+                ':description' => $produit->getDescription(),
+                ':prix' => $produit->getPrix(),
+                ':quantite' => $produit->getQuantite(),
+                ':id_categorie' => $produit->getIdCategorie()
+            ]);
+            return $db->lastInsertId();
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+            return false;
+        }
     }
 
-    // Admin : approuver / suspendre
-    public function adminUpdateStatut($id, $statut) {
-        $this->produitModel->updateStatut($id, $statut);
-        header("Location: index.php?page=admin_produits&success=1"); exit;
+    // Modifier un produit existant
+    public function updateProduit(Produit $produit) {
+        $sql = "UPDATE produit SET nom=:nom, description=:description, prix=:prix,
+                quantite=:quantite, id_categorie=:id_categorie WHERE id_produit=:id";
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([
+                ':nom' => $produit->getNom(),
+                ':description' => $produit->getDescription(),
+                ':prix' => $produit->getPrix(),
+                ':quantite' => $produit->getQuantite(),
+                ':id_categorie' => $produit->getIdCategorie(),
+                ':id' => $produit->getId()
+            ]);
+            return true;
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+            return false;
+        }
+    }
+
+    // Supprimer un produit par son ID
+    public function deleteProduit($id) {
+        $sql = "DELETE FROM produit WHERE id_produit=:id";
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([':id' => $id]);
+            return true;
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+            return false;
+        }
+    }
+
+    // Mettre à jour le statut d'un produit
+    public function updateStatut($id, $statut) {
+        $sql = "UPDATE produit SET statut=:statut WHERE id_produit=:id";
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([':statut' => $statut, ':id' => $id]);
+            return true;
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+            return false;
+        }
+    }
+
+    // Statistiques pour le dashboard admin
+    public function getStats() {
+        $stats = ['en_attente' => 0, 'disponible' => 0, 'rupture' => 0, 'total' => 0];
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare("SELECT statut, COUNT(*) as count FROM produit GROUP BY statut");
+            $query->execute();
+            $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as $row) {
+                if (isset($stats[$row['statut']])) {
+                    $stats[$row['statut']] = (int)$row['count'];
+                }
+            }
+            $stats['total'] = $stats['en_attente'] + $stats['disponible'] + $stats['rupture'];
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+        }
+        return $stats;
     }
 }
 ?>

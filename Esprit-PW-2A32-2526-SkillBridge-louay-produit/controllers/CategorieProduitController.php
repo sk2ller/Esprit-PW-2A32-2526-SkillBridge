@@ -1,58 +1,119 @@
 <?php
-require_once __DIR__ . '/../models/CategorieProduit.php';
+require_once(__DIR__ . '/../config.php');
+require_once(__DIR__ . '/../models/CategorieProduit.php');
 
+// Contrôleur pour gérer les opérations CRUD sur les catégories de produits
 class CategorieProduitController {
-    private $categorieModel;
 
-    public function __construct() {
-        $this->categorieModel = new CategorieProduit();
-    }
+    // Récupérer toutes les catégories avec le nombre de produits
+    public function listCategories() {
+        $sql = "SELECT c.*, COUNT(p.id_produit) as nb_produits
+                FROM categorie_produit c
+                LEFT JOIN produit p ON c.id_categorie = p.id_categorie
+                GROUP BY c.id_categorie
+                ORDER BY c.nom_categorie ASC";
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute();
+            $rows = $query->fetchAll(PDO::FETCH_ASSOC);
 
-    // Admin : liste des catégories
-    public function adminIndex() {
-        $categories = $this->categorieModel->getAll();
-        require_once __DIR__ . '/../views/BackOffice/admin/categories.php';
-    }
-
-    // Admin : créer une catégorie
-    public function adminCreate() {
-        $error = null;
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if (empty($_POST['nom_categorie'])) {
-                $error = "Le nom de la catégorie est requis.";
-            } else {
-                $data = [
-                    'nom_categorie' => htmlspecialchars($_POST['nom_categorie']),
-                    'description' => htmlspecialchars($_POST['description'] ?? ''),
-                    'icone' => htmlspecialchars($_POST['icone'] ?? 'fas fa-folder')
-                ];
-                $this->categorieModel->create($data);
-                header("Location: index.php?page=admin_categories&success=1"); exit;
+            $categories = [];
+            foreach ($rows as $row) {
+                $cat = new CategorieProduit(
+                    $row['nom_categorie'],
+                    $row['description'],
+                    $row['icone']
+                );
+                $cat->setId($row['id_categorie']);
+                $cat->setCreatedAt($row['created_at']);
+                $cat->setNbProduits((int)$row['nb_produits']);
+                $categories[] = $cat;
             }
+            return $categories;
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+            return [];
         }
-        require_once __DIR__ . '/../views/BackOffice/admin/categorie_form.php';
     }
 
-    // Admin : modifier une catégorie
-    public function adminEdit($id) {
-        $categorie = $this->categorieModel->getById($id);
-        $error = null;
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $data = [
-                'nom_categorie' => htmlspecialchars($_POST['nom_categorie']),
-                'description' => htmlspecialchars($_POST['description'] ?? ''),
-                'icone' => htmlspecialchars($_POST['icone'] ?? 'fas fa-folder')
-            ];
-            $this->categorieModel->update($id, $data);
-            header("Location: index.php?page=admin_categories&success=2"); exit;
+    // Récupérer une catégorie par son ID
+    public function getCategorieById($id) {
+        $sql = "SELECT * FROM categorie_produit WHERE id_categorie = :id";
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([':id' => $id]);
+            $row = $query->fetch(PDO::FETCH_ASSOC);
+
+            if ($row) {
+                $cat = new CategorieProduit(
+                    $row['nom_categorie'],
+                    $row['description'],
+                    $row['icone']
+                );
+                $cat->setId($row['id_categorie']);
+                $cat->setCreatedAt($row['created_at']);
+                return $cat;
+            }
+            return null;
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+            return null;
         }
-        require_once __DIR__ . '/../views/BackOffice/admin/categorie_form.php';
     }
 
-    // Admin : supprimer une catégorie
-    public function adminDelete($id) {
-        $this->categorieModel->delete($id);
-        header("Location: index.php?page=admin_categories&success=3"); exit;
+    // Ajouter une nouvelle catégorie
+    public function addCategorie(CategorieProduit $categorie) {
+        $sql = "INSERT INTO categorie_produit (nom_categorie, description, icone)
+                VALUES (:nom, :description, :icone)";
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([
+                ':nom' => $categorie->getNomCategorie(),
+                ':description' => $categorie->getDescription(),
+                ':icone' => $categorie->getIcone()
+            ]);
+            return $db->lastInsertId();
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+            return false;
+        }
+    }
+
+    // Modifier une catégorie existante
+    public function updateCategorie(CategorieProduit $categorie) {
+        $sql = "UPDATE categorie_produit SET nom_categorie=:nom, description=:description, icone=:icone
+                WHERE id_categorie=:id";
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([
+                ':nom' => $categorie->getNomCategorie(),
+                ':description' => $categorie->getDescription(),
+                ':icone' => $categorie->getIcone(),
+                ':id' => $categorie->getId()
+            ]);
+            return true;
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+            return false;
+        }
+    }
+
+    // Supprimer une catégorie par son ID
+    public function deleteCategorie($id) {
+        $sql = "DELETE FROM categorie_produit WHERE id_categorie=:id";
+        $db = Config::getConnexion();
+        try {
+            $query = $db->prepare($sql);
+            $query->execute([':id' => $id]);
+            return true;
+        } catch (Exception $e) {
+            echo 'Erreur: ' . $e->getMessage();
+            return false;
+        }
     }
 }
 ?>

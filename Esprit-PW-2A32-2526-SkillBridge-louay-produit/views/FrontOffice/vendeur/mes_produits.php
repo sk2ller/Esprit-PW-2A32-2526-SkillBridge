@@ -30,8 +30,8 @@ include __DIR__ . '/../partials/navbar.php';
   <div class="dashboard-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom:2rem;">
     <?php
     $totalP = count($produits);
-    $dispoP = count(array_filter($produits, fn($p) => $p['statut'] === 'disponible'));
-    $pendP = count(array_filter($produits, fn($p) => $p['statut'] === 'en_attente'));
+    $dispoP = count(array_filter($produits, fn($p) => $p->getStatut() === 'disponible'));
+    $pendP = count(array_filter($produits, fn($p) => $p->getStatut() === 'en_attente'));
     ?>
     <div class="stat-card">
       <div class="stat-icon" style="background:rgba(124,58,237,0.15); color:var(--accent-purple-light);"><i class="fas fa-box"></i></div>
@@ -63,30 +63,30 @@ include __DIR__ . '/../partials/navbar.php';
   <div class="products-grid">
     <?php foreach ($produits as $p): ?>
     <div class="product-card">
-      <div class="product-card-image" style="background: linear-gradient(135deg, <?= ['#1a0533','#0a2240','#002a1f','#1a1000'][crc32($p['nom']) % 4] ?>, var(--bg-secondary));">
-        <i class="<?= htmlspecialchars($p['icone'] ?? 'fas fa-box') ?>" style="color: rgba(255,255,255,0.2); font-size:4rem; position:relative; z-index:1;"></i>
+      <div class="product-card-image" style="background: linear-gradient(135deg, <?= ['#1a0533','#0a2240','#002a1f','#1a1000'][crc32($p->getNom()) % 4] ?>, var(--bg-secondary));">
+        <i class="fas fa-box" style="color: rgba(255,255,255,0.2); font-size:4rem; position:relative; z-index:1;"></i>
       </div>
       <div class="product-card-body">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-          <span class="product-category-tag"><?= htmlspecialchars($p['nom_categorie']) ?></span>
+          <span class="product-category-tag"><?= htmlspecialchars($p->getNomCategorie()) ?></span>
           <?php
           $bmap = ['disponible'=>'badge-disponible','rupture'=>'badge-rupture','en_attente'=>'badge-pending'];
           $lmap = ['disponible'=>'✓ Dispo','rupture'=>'✗ Rupture','en_attente'=>'⏳ Attente'];
           ?>
-          <span class="badge <?= $bmap[$p['statut']] ?>"><?= $lmap[$p['statut']] ?></span>
+          <span class="badge <?= $bmap[$p->getStatut()] ?>"><?= $lmap[$p->getStatut()] ?></span>
         </div>
-        <h3 class="product-title"><?= htmlspecialchars($p['nom']) ?></h3>
+        <h3 class="product-title"><?= htmlspecialchars($p->getNom()) ?></h3>
       </div>
       <div class="product-card-footer">
         <div>
-          <div class="product-price"><?= number_format($p['prix'], 2) ?> DT</div>
-          <div class="product-stock"><i class="fas fa-cubes"></i> <?= $p['quantite'] ?> en stock</div>
+          <div class="product-price"><?= number_format($p->getPrix(), 2) ?> DT</div>
+          <div class="product-stock"><i class="fas fa-cubes"></i> <?= $p->getQuantite() ?> en stock</div>
         </div>
         <div style="display:flex; gap:6px;">
-          <a href="index.php?page=edit_produit&id=<?= $p['id_produit'] ?>" class="btn-sm btn-sm-outline" title="Modifier">
+          <a href="index.php?page=edit_produit&id=<?= $p->getId() ?>" class="btn-sm btn-sm-outline" title="Modifier">
             <i class="fas fa-pen"></i>
           </a>
-          <a href="index.php?page=delete_produit&id=<?= $p['id_produit'] ?>" class="btn-sm btn-sm-red"
+          <a href="index.php?page=delete_produit&id=<?= $p->getId() ?>" class="btn-sm btn-sm-red"
              onclick="return confirm('Supprimer ce produit ?')" title="Supprimer">
             <i class="fas fa-trash"></i>
           </a>

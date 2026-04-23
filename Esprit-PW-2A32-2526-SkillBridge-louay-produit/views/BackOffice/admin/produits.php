@@ -77,7 +77,7 @@ include __DIR__ . '/../partials/sidebar.php';
           <?php
           $filtered = $produits;
           if ($filterStatut !== 'all') {
-              $filtered = array_filter($produits, fn($p) => $p['statut'] === $filterStatut);
+              $filtered = array_filter($produits, fn($p) => $p->getStatut() === $filterStatut);
           }
           if (empty($filtered)): ?>
           <tr><td colspan="7" style="text-align:center; padding:3rem; color:var(--text-muted);">
@@ -87,48 +87,48 @@ include __DIR__ . '/../partials/sidebar.php';
           <?php else: ?>
           <?php foreach ($filtered as $p): ?>
           <tr>
-            <td style="color:var(--text-muted); font-size:0.8rem;">#<?= $p['id_produit'] ?></td>
+            <td style="color:var(--text-muted); font-size:0.8rem;">#<?= $p->getId() ?></td>
             <td>
-              <div class="table-product-name"><?= htmlspecialchars(substr($p['nom'], 0, 40)) ?>...</div>
-              <div class="table-product-meta"><?= date('d/m/Y', strtotime($p['created_at'])) ?></div>
+              <div class="table-product-name"><?= htmlspecialchars(substr($p->getNom(), 0, 40)) ?>...</div>
+              <div class="table-product-meta"><?= date('d/m/Y', strtotime($p->getCreatedAt())) ?></div>
             </td>
             <td>
               <span style="background:var(--accent-glow); color:var(--accent-light); padding:3px 10px; border-radius:20px; font-size:0.75rem;">
-                <?= htmlspecialchars($p['nom_categorie']) ?>
+                <?= htmlspecialchars($p->getNomCategorie()) ?>
               </span>
             </td>
-            <td style="font-weight:700; color:var(--success);"><?= number_format($p['prix'], 2) ?> DT</td>
-            <td style="color:var(--text-muted); font-size:0.82rem;"><?= $p['quantite'] ?></td>
+            <td style="font-weight:700; color:var(--success);"><?= number_format($p->getPrix(), 2) ?> DT</td>
+            <td style="color:var(--text-muted); font-size:0.82rem;"><?= $p->getQuantite() ?></td>
             <td>
               <?php
               $bmap = ['disponible'=>'badge-disponible','rupture'=>'badge-rupture','en_attente'=>'badge-pending'];
               $lmap = ['disponible'=>'✓ Disponible','rupture'=>'✗ Rupture','en_attente'=>'⏳ En attente'];
               ?>
-              <span class="badge <?= $bmap[$p['statut']] ?>"><?= $lmap[$p['statut']] ?></span>
+              <span class="badge <?= $bmap[$p->getStatut()] ?>"><?= $lmap[$p->getStatut()] ?></span>
             </td>
             <td>
               <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <?php if ($p['statut'] === 'en_attente'): ?>
-                <a href="index.php?page=admin_produit_statut&id=<?= $p['id_produit'] ?>&statut=disponible"
+                <?php if ($p->getStatut() === 'en_attente'): ?>
+                <a href="index.php?page=admin_produit_statut&id=<?= $p->getId() ?>&statut=disponible"
                    class="admin-btn admin-btn-success admin-btn-sm">
                   <i class="fas fa-check"></i> Approuver
                 </a>
-                <a href="index.php?page=admin_produit_statut&id=<?= $p['id_produit'] ?>&statut=rupture"
+                <a href="index.php?page=admin_produit_statut&id=<?= $p->getId() ?>&statut=rupture"
                    class="admin-btn admin-btn-danger admin-btn-sm">
                   <i class="fas fa-ban"></i> Refuser
                 </a>
-                <?php elseif ($p['statut'] === 'disponible'): ?>
-                <a href="index.php?page=admin_produit_statut&id=<?= $p['id_produit'] ?>&statut=rupture"
+                <?php elseif ($p->getStatut() === 'disponible'): ?>
+                <a href="index.php?page=admin_produit_statut&id=<?= $p->getId() ?>&statut=rupture"
                    class="admin-btn admin-btn-danger admin-btn-sm">
                   <i class="fas fa-ban"></i> Rupture
                 </a>
                 <?php else: ?>
-                <a href="index.php?page=admin_produit_statut&id=<?= $p['id_produit'] ?>&statut=disponible"
+                <a href="index.php?page=admin_produit_statut&id=<?= $p->getId() ?>&statut=disponible"
                    class="admin-btn admin-btn-warning admin-btn-sm">
                   <i class="fas fa-undo"></i> Réactiver
                 </a>
                 <?php endif; ?>
-                <a href="index.php?page=produit_detail&id=<?= $p['id_produit'] ?>" target="_blank"
+                <a href="index.php?page=produit_detail&id=<?= $p->getId() ?>" target="_blank"
                    class="admin-btn admin-btn-outline admin-btn-sm" title="Voir">
                   <i class="fas fa-eye"></i>
                 </a>

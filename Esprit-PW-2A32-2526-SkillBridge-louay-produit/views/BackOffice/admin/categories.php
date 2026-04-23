@@ -54,22 +54,22 @@ include __DIR__ . '/../partials/sidebar.php';
           <?php else: ?>
           <?php foreach ($categories as $cat): ?>
           <tr>
-            <td style="color:var(--text-muted); font-size:0.8rem;">#<?= $cat['id_categorie'] ?></td>
-            <td><i class="<?= htmlspecialchars($cat['icone']) ?>" style="font-size:1.2rem; color:var(--accent-light);"></i></td>
-            <td style="font-weight:600;"><?= htmlspecialchars($cat['nom_categorie']) ?></td>
+            <td style="color:var(--text-muted); font-size:0.8rem;">#<?= $cat->getId() ?></td>
+            <td><i class="<?= htmlspecialchars($cat->getIcone()) ?>" style="font-size:1.2rem; color:var(--accent-light);"></i></td>
+            <td style="font-weight:600;"><?= htmlspecialchars($cat->getNomCategorie()) ?></td>
             <td style="color:var(--text-muted); font-size:0.82rem; max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-              <?= htmlspecialchars($cat['description'] ?? '') ?>
+              <?= htmlspecialchars($cat->getDescription() ?? '') ?>
             </td>
             <td>
-              <span class="badge badge-info"><?= $cat['nb_produits'] ?> produit<?= $cat['nb_produits'] > 1 ? 's' : '' ?></span>
+              <span class="badge badge-info"><?= $cat->getNbProduits() ?> produit<?= $cat->getNbProduits() > 1 ? 's' : '' ?></span>
             </td>
             <td>
               <div style="display:flex; gap:6px;">
-                <a href="index.php?page=admin_categorie_edit&id=<?= $cat['id_categorie'] ?>"
+                <a href="index.php?page=admin_categorie_edit&id=<?= $cat->getId() ?>"
                    class="admin-btn admin-btn-outline admin-btn-sm">
                   <i class="fas fa-pen"></i>
                 </a>
-                <a href="index.php?page=admin_categorie_delete&id=<?= $cat['id_categorie'] ?>"
+                <a href="index.php?page=admin_categorie_delete&id=<?= $cat->getId() ?>"
                    class="admin-btn admin-btn-danger admin-btn-sm"
                    onclick="return confirm('Supprimer cette catégorie ? Les produits associés seront aussi supprimés.')">
                   <i class="fas fa-trash"></i>

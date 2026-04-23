@@ -29,7 +29,7 @@ $isEdit = isset($produit) && $produit;
       <div class="form-group">
         <label class="form-label">Nom du produit <span style="color:#ef4444">*</span></label>
         <input type="text" id="nom" name="nom" class="form-control"
-               value="<?= htmlspecialchars($produit['nom'] ?? '') ?>"
+               value="<?= $isEdit ? htmlspecialchars($produit->getNom()) : htmlspecialchars($_POST['nom'] ?? '') ?>"
                placeholder="Ex: Template Dashboard Admin Pro">
         <div style="color:var(--text-muted); font-size:0.78rem; margin-top:4px;">Soyez précis et attractif</div>
       </div>
@@ -39,9 +39,9 @@ $isEdit = isset($produit) && $produit;
         <select id="id_categorie" name="id_categorie" class="form-control">
           <option value="">Choisir une catégorie...</option>
           <?php foreach ($categories as $cat): ?>
-          <option value="<?= $cat['id_categorie'] ?>"
-            <?= (($produit['id_categorie'] ?? '') == $cat['id_categorie']) ? 'selected' : '' ?>>
-            <?= htmlspecialchars($cat['nom_categorie']) ?>
+          <option value="<?= $cat->getId() ?>"
+            <?= (($isEdit ? $produit->getIdCategorie() : ($_POST['id_categorie'] ?? '')) == $cat->getId()) ? 'selected' : '' ?>>
+            <?= htmlspecialchars($cat->getNomCategorie()) ?>
           </option>
           <?php endforeach; ?>
         </select>
@@ -50,19 +50,19 @@ $isEdit = isset($produit) && $produit;
       <div class="form-group">
         <label class="form-label">Description <span style="color:#ef4444">*</span></label>
         <textarea id="description" name="description" class="form-control" rows="6"
-                  placeholder="Décrivez en détail votre produit, ses fonctionnalités, ce qui est inclus..."><?= htmlspecialchars($produit['description'] ?? '') ?></textarea>
+                  placeholder="Décrivez en détail votre produit, ses fonctionnalités, ce qui est inclus..."><?= $isEdit ? htmlspecialchars($produit->getDescription()) : htmlspecialchars($_POST['description'] ?? '') ?></textarea>
       </div>
 
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
         <div class="form-group">
           <label class="form-label">Prix (DT) <span style="color:#ef4444">*</span></label>
           <input type="number" id="prix" name="prix" class="form-control" min="1" step="0.01"
-                 value="<?= $produit['prix'] ?? '' ?>" placeholder="Ex: 49.99">
+                 value="<?= $isEdit ? $produit->getPrix() : ($_POST['prix'] ?? '') ?>" placeholder="Ex: 49.99">
         </div>
         <div class="form-group">
           <label class="form-label">Quantité en stock <span style="color:#ef4444">*</span></label>
           <input type="number" id="quantite" name="quantite" class="form-control" min="1"
-                 value="<?= $produit['quantite'] ?? '' ?>" placeholder="Ex: 100">
+                 value="<?= $isEdit ? $produit->getQuantite() : ($_POST['quantite'] ?? '') ?>" placeholder="Ex: 100">
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 <?php
-$pageTitle = htmlspecialchars($produit['nom']) . ' - SkillBridge';
+$pageTitle = htmlspecialchars($produit->getNom()) . ' - SkillBridge';
 include __DIR__ . '/../partials/navbar.php';
 ?>
 
@@ -13,27 +13,27 @@ include __DIR__ . '/../partials/navbar.php';
   </div>
 
   <div class="detail-grid">
-    <div class="detail-image" style="background: linear-gradient(135deg, <?= ['#1a0533','#0a2240','#002a1f','#1a1000'][crc32($produit['nom']) % 4] ?>, var(--bg-secondary));">
-      <i class="<?= htmlspecialchars($produit['icone'] ?? 'fas fa-box') ?>" style="color: rgba(255,255,255,0.3); font-size:6rem; position:relative; z-index:1;"></i>
+    <div class="detail-image" style="background: linear-gradient(135deg, <?= ['#1a0533','#0a2240','#002a1f','#1a1000'][crc32($produit->getNom()) % 4] ?>, var(--bg-secondary));">
+      <i class="fas fa-box" style="color: rgba(255,255,255,0.3); font-size:6rem; position:relative; z-index:1;"></i>
     </div>
 
     <div class="detail-info">
       <span class="product-category-tag" style="font-size:0.85rem; padding:5px 14px;">
-        <?= htmlspecialchars($produit['nom_categorie']) ?>
+        <?= htmlspecialchars($produit->getNomCategorie()) ?>
       </span>
 
-      <h1><?= htmlspecialchars($produit['nom']) ?></h1>
+      <h1><?= htmlspecialchars($produit->getNom()) ?></h1>
 
-      <div class="detail-price"><?= number_format($produit['prix'], 2) ?> DT</div>
+      <div class="detail-price"><?= number_format($produit->getPrix(), 2) ?> DT</div>
 
       <div class="detail-meta">
         <div class="detail-meta-item">
           <i class="fas fa-cubes"></i>
-          <span>Stock : <strong><?= $produit['quantite'] ?></strong> unités disponibles</span>
+          <span>Stock : <strong><?= $produit->getQuantite() ?></strong> unités disponibles</span>
         </div>
         <div class="detail-meta-item">
           <i class="fas fa-tags"></i>
-          <span>Catégorie : <strong><?= htmlspecialchars($produit['nom_categorie']) ?></strong></span>
+          <span>Catégorie : <strong><?= htmlspecialchars($produit->getNomCategorie()) ?></strong></span>
         </div>
         <div class="detail-meta-item">
           <i class="fas fa-circle-check"></i>
@@ -42,17 +42,17 @@ include __DIR__ . '/../partials/navbar.php';
             $bmap = ['disponible'=>'badge-disponible','rupture'=>'badge-rupture','en_attente'=>'badge-pending'];
             $lmap = ['disponible'=>'✓ Disponible','rupture'=>'✗ Rupture','en_attente'=>'⏳ En attente'];
             ?>
-            <span class="badge <?= $bmap[$produit['statut']] ?>"><?= $lmap[$produit['statut']] ?></span>
+            <span class="badge <?= $bmap[$produit->getStatut()] ?>"><?= $lmap[$produit->getStatut()] ?></span>
           </span>
         </div>
         <div class="detail-meta-item">
           <i class="fas fa-calendar"></i>
-          <span>Publié le : <?= date('d/m/Y', strtotime($produit['created_at'])) ?></span>
+          <span>Publié le : <?= date('d/m/Y', strtotime($produit->getCreatedAt())) ?></span>
         </div>
       </div>
 
-      <?php if ($produit['statut'] === 'disponible'): ?>
-      <a href="#" class="btn-primary" style="width:100%; justify-content:center;">
+      <?php if ($produit->getStatut() === 'disponible'): ?>
+      <a href="index.php?page=commander&id=<?= $produit->getId() ?>" class="btn-primary" style="width:100%; justify-content:center;">
         <i class="fas fa-shopping-cart"></i> Acheter maintenant
       </a>
       <?php endif; ?>
@@ -61,7 +61,7 @@ include __DIR__ . '/../partials/navbar.php';
 
   <div class="detail-description">
     <h3 style="font-family:'Space Grotesk',sans-serif; margin-bottom:1rem;">Description</h3>
-    <p><?= nl2br(htmlspecialchars($produit['description'])) ?></p>
+    <p><?= nl2br(htmlspecialchars($produit->getDescription())) ?></p>
   </div>
 
 </div>

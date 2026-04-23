@@ -27,20 +27,20 @@ $isEdit = isset($categorie) && $categorie;
         <div class="form-group">
           <label class="form-label">Nom de la catégorie <span style="color:var(--danger);">*</span></label>
           <input type="text" id="nom_categorie" name="nom_categorie" class="form-control"
-                 value="<?= htmlspecialchars($categorie['nom_categorie'] ?? '') ?>"
+                 value="<?= $isEdit ? htmlspecialchars($categorie->getNomCategorie()) : htmlspecialchars($_POST['nom_categorie'] ?? '') ?>"
                  placeholder="Ex: Templates Web">
         </div>
 
         <div class="form-group">
           <label class="form-label">Description</label>
           <textarea name="description" class="form-control" rows="4"
-                    placeholder="Description courte de la catégorie..."><?= htmlspecialchars($categorie['description'] ?? '') ?></textarea>
+                    placeholder="Description courte de la catégorie..."><?= $isEdit ? htmlspecialchars($categorie->getDescription()) : htmlspecialchars($_POST['description'] ?? '') ?></textarea>
         </div>
 
         <div class="form-group">
           <label class="form-label">Icône (classe Font Awesome)</label>
           <input type="text" name="icone" class="form-control"
-                 value="<?= htmlspecialchars($categorie['icone'] ?? 'fas fa-folder') ?>"
+                 value="<?= $isEdit ? htmlspecialchars($categorie->getIcone()) : htmlspecialchars($_POST['icone'] ?? 'fas fa-folder') ?>"
                  placeholder="Ex: fas fa-laptop-code">
           <div style="color:var(--text-muted); font-size:0.78rem; margin-top:4px;">
             Utilisez les classes Font Awesome (ex: fas fa-code, fas fa-palette)

@@ -9,12 +9,6 @@
 </head>
 <body>
 
-<?php
-require_once __DIR__ . '/../../../models/CategorieProduit.php';
-$catModel = new CategorieProduit();
-$allCategories = $catModel->getAll();
-?>
-
 <nav class="navbar">
   <a href="index.php" class="navbar-brand">
     <img src="logo.png" alt="Logo" style="height: 40px; width: auto;">
@@ -38,15 +32,17 @@ $allCategories = $catModel->getAll();
           <i class="fas fa-th-large icon"></i> Tous les Produits
         </a>
         <div style="border-top: 1px solid var(--border); margin: 4px 0;"></div>
+        <?php if (isset($allCategories)): ?>
         <?php foreach ($allCategories as $cat): ?>
-        <a href="index.php?page=all_produits&categorie=<?= $cat['id_categorie'] ?>" class="dropdown-item">
-          <i class="<?= htmlspecialchars($cat['icone']) ?> icon"></i>
-          <?= htmlspecialchars($cat['nom_categorie']) ?>
-          <?php if ($cat['nb_produits'] > 0): ?>
-          <span class="badge-count"><?= $cat['nb_produits'] ?></span>
+        <a href="index.php?page=all_produits&categorie=<?= $cat->getId() ?>" class="dropdown-item">
+          <i class="<?= htmlspecialchars($cat->getIcone()) ?> icon"></i>
+          <?= htmlspecialchars($cat->getNomCategorie()) ?>
+          <?php if ($cat->getNbProduits() > 0): ?>
+          <span class="badge-count"><?= $cat->getNbProduits() ?></span>
           <?php endif; ?>
         </a>
         <?php endforeach; ?>
+        <?php endif; ?>
       </div>
     </li>
 
@@ -54,6 +50,13 @@ $allCategories = $catModel->getAll();
       <a href="index.php?role=vendeur&page=mes_produits" class="nav-link">
         <i class="fas fa-store" style="font-size:0.85rem"></i>
         Mes Produits
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a href="index.php?page=mes_commandes" class="nav-link">
+        <i class="fas fa-receipt" style="font-size:0.85rem"></i>
+        Mes Commandes
       </a>
     </li>
   </ul>

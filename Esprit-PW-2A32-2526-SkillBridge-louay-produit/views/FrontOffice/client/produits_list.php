@@ -58,10 +58,10 @@ include __DIR__ . '/../partials/navbar.php';
     <i class="fas fa-border-all"></i> Tous <span class="count"><?= count($produits) ?></span>
   </a>
   <?php foreach ($categories as $cat): ?>
-  <a href="index.php?page=all_produits&categorie=<?= $cat['id_categorie'] ?>" class="cat-chip <?= (($_GET['categorie'] ?? '') == $cat['id_categorie']) ? 'active' : '' ?>">
-    <i class="<?= htmlspecialchars($cat['icone']) ?>"></i>
-    <?= htmlspecialchars($cat['nom_categorie']) ?>
-    <span class="count"><?= $cat['nb_produits'] ?></span>
+  <a href="index.php?page=all_produits&categorie=<?= $cat->getId() ?>" class="cat-chip <?= (($_GET['categorie'] ?? '') == $cat->getId()) ? 'active' : '' ?>">
+    <i class="<?= htmlspecialchars($cat->getIcone()) ?>"></i>
+    <?= htmlspecialchars($cat->getNomCategorie()) ?>
+    <span class="count"><?= $cat->getNbProduits() ?></span>
   </a>
   <?php endforeach; ?>
 </div>
@@ -94,22 +94,22 @@ include __DIR__ . '/../partials/navbar.php';
   <div class="products-grid">
     <?php foreach ($produits as $p): ?>
     <div class="product-card">
-      <div class="product-card-image" style="background: linear-gradient(135deg, <?= ['#1a0533','#0a2240','#002a1f','#1a1000'][crc32($p['nom']) % 4] ?>, var(--bg-secondary));">
-        <i class="<?= htmlspecialchars($p['icone'] ?? 'fas fa-box') ?>" style="color: rgba(255,255,255,0.2); font-size:4rem; position:relative; z-index:1;"></i>
+      <div class="product-card-image" style="background: linear-gradient(135deg, <?= ['#1a0533','#0a2240','#002a1f','#1a1000'][crc32($p->getNom()) % 4] ?>, var(--bg-secondary));">
+        <i class="fas fa-box" style="color: rgba(255,255,255,0.2); font-size:4rem; position:relative; z-index:1;"></i>
       </div>
       <div class="product-card-body">
-        <span class="product-category-tag"><?= htmlspecialchars($p['nom_categorie']) ?></span>
-        <h3 class="product-title"><?= htmlspecialchars($p['nom']) ?></h3>
+        <span class="product-category-tag"><?= htmlspecialchars($p->getNomCategorie()) ?></span>
+        <h3 class="product-title"><?= htmlspecialchars($p->getNom()) ?></h3>
         <p style="color:var(--text-muted); font-size:0.82rem; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
-          <?= htmlspecialchars($p['description']) ?>
+          <?= htmlspecialchars($p->getDescription()) ?>
         </p>
       </div>
       <div class="product-card-footer">
         <div>
-          <div class="product-price"><?= number_format($p['prix'], 2) ?> DT</div>
-          <div class="product-stock"><i class="fas fa-cubes"></i> <?= $p['quantite'] ?> en stock</div>
+          <div class="product-price"><?= number_format($p->getPrix(), 2) ?> DT</div>
+          <div class="product-stock"><i class="fas fa-cubes"></i> <?= $p->getQuantite() ?> en stock</div>
         </div>
-        <a href="index.php?page=produit_detail&id=<?= $p['id_produit'] ?>" class="btn-sm btn-sm-purple">
+        <a href="index.php?page=produit_detail&id=<?= $p->getId() ?>" class="btn-sm btn-sm-purple">
           Voir <i class="fas fa-arrow-right"></i>
         </a>
       </div>

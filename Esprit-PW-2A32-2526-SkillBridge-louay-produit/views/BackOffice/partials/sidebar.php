@@ -10,10 +10,6 @@
 <body>
 
 <?php
-require_once __DIR__ . '/../../../models/Produit.php';
-require_once __DIR__ . '/../../../models/CategorieProduit.php';
-$pModel = new Produit();
-$pStats = $pModel->getStats();
 $pendingCount = $pStats['en_attente'] ?? 0;
 $currentPage = $_GET['page'] ?? '';
 ?>
@@ -61,6 +57,10 @@ $currentPage = $_GET['page'] ?? '';
 
     <a href="index.php?page=admin_categories" class="sidebar-item <?= $currentPage === 'admin_categories' || strpos($currentPage, 'admin_categorie') === 0 ? 'active' : '' ?>">
       <i class="fas fa-tags icon"></i> Catégories
+    </a>
+
+    <a href="index.php?page=admin_commandes" class="sidebar-item <?= $currentPage === 'admin_commandes' || strpos($currentPage, 'admin_commande') === 0 ? 'active' : '' ?>">
+      <i class="fas fa-receipt icon"></i> Commandes
     </a>
 
     <div class="sidebar-section-label" style="margin-top:0.5rem;">Liens Rapides</div>
