@@ -1,0 +1,11 @@
+{
+  "name": "skillbridge-chat",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "chat": "node socket-server.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.1"
+  }
+}
