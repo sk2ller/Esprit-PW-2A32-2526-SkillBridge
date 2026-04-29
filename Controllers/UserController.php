@@ -4,9 +4,31 @@ require_once(__DIR__ . '/../Models/User.php');
 
 class UserController
 {
+    private function ensureUserProfileColumns()
+    {
+        $db = Config::getConnexion();
+        $columns = [
+            'availability' => "ALTER TABLE `User` ADD COLUMN `availability` varchar(50) DEFAULT 'available' AFTER `is_banned`",
+            'rating' => "ALTER TABLE `User` ADD COLUMN `rating` decimal(3,2) DEFAULT 0.00 AFTER `availability`",
+            'phone' => "ALTER TABLE `User` ADD COLUMN `phone` varchar(30) DEFAULT NULL AFTER `rating`",
+            'bio' => "ALTER TABLE `User` ADD COLUMN `bio` text DEFAULT NULL AFTER `phone`",
+            'profile_picture' => "ALTER TABLE `User` ADD COLUMN `profile_picture` varchar(255) DEFAULT NULL AFTER `bio`",
+            'skill_summary' => "ALTER TABLE `User` ADD COLUMN `skill_summary` varchar(255) DEFAULT NULL AFTER `profile_picture`",
+            'experience_description' => "ALTER TABLE `User` ADD COLUMN `experience_description` text DEFAULT NULL AFTER `skill_summary`",
+        ];
+
+        foreach ($columns as $columnName => $sql) {
+            $check = $db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'User' AND COLUMN_NAME = ?");
+            $check->execute([$columnName]);
+            if ((int) $check->fetchColumn() === 0) {
+                $db->exec($sql);
+            }
+        }
+    }
     // ── CREATE ────────────────────────────────────────────────────────
     public function addUser(User $user)
     {
+        $this->ensureUserProfileColumns();
         $sql = "INSERT INTO User (nom, prenom, email, mot_de_passe, niveau, id_role, is_approved)
                 VALUES (:nom, :prenom, :email, :mot_de_passe, :niveau, :id_role, :is_approved)";
         $db = Config::getConnexion();
@@ -31,6 +53,7 @@ class UserController
     // ── READ ALL ──────────────────────────────────────────────────────
     public function listUsers()
     {
+        $this->ensureUserProfileColumns();
         $sql = "SELECT * FROM User ORDER BY id DESC";
         $db = Config::getConnexion();
         try {
@@ -52,6 +75,7 @@ class UserController
     // ── READ ONE ──────────────────────────────────────────────────────
     public function getUserById($id)
     {
+        $this->ensureUserProfileColumns();
         $sql = "SELECT * FROM User WHERE id = :id";
         $db = Config::getConnexion();
         try {
@@ -71,6 +95,7 @@ class UserController
     // ── READ BY EMAIL ─────────────────────────────────────────────────
     public function getUserByEmail($email)
     {
+        $this->ensureUserProfileColumns();
         $sql = "SELECT * FROM User WHERE email = :email";
         $db = Config::getConnexion();
         try {
@@ -108,6 +133,7 @@ class UserController
     // ── UPDATE ────────────────────────────────────────────────────────
     public function updateUser(User $user)
     {
+        $this->ensureUserProfileColumns();
         $sql = "UPDATE User SET nom=:nom, prenom=:prenom, email=:email,
                 niveau=:niveau, id_role=:id_role, availability=:availability,
                 rating=:rating, phone=COALESCE(:phone, phone), bio=COALESCE(:bio, bio),
@@ -143,6 +169,7 @@ class UserController
     // ── UPDATE PASSWORD ───────────────────────────────────────────────
     public function updatePassword($id, $newPassword)
     {
+        $this->ensureUserProfileColumns();
         $sql = "UPDATE User SET mot_de_passe=:mdp WHERE id=:id";
         $db = Config::getConnexion();
         try {
@@ -161,6 +188,7 @@ class UserController
     // ── BADGE ─────────────────────────────────────────────────────────
     public function updateBadge($id, $status)
     {
+        $this->ensureUserProfileColumns();
         $sql = "UPDATE User SET badge_verifie=:b WHERE id=:id";
         $db = Config::getConnexion();
         try {
@@ -179,6 +207,7 @@ class UserController
     // ── APPROVE / DISAPPROVE USER ─────────────────────────────────────
     public function approveUser($id, $approved = 1)
     {
+        $this->ensureUserProfileColumns();
         $sql = "UPDATE User SET is_approved=:approved WHERE id=:id";
         $db = Config::getConnexion();
         try {
@@ -194,6 +223,7 @@ class UserController
     // ── BAN / UNBAN USER ──────────────────────────────────────────────
     public function banUser($id, $isBanned = 1)
     {
+        $this->ensureUserProfileColumns();
         $sql = "UPDATE User SET is_banned=:is_banned WHERE id=:id";
         $db = Config::getConnexion();
         try {
@@ -209,6 +239,7 @@ class UserController
     // ── GET FREELANCERS ───────────────────────────────────────────────
     public function getFreelancers($filters = [])
     {
+        $this->ensureUserProfileColumns();
         $sql = "SELECT * FROM User WHERE id_role = 3 AND is_approved = 1 AND is_banned = 0";
         $params = [];
         
@@ -253,6 +284,7 @@ class UserController
     // ── GET PENDING USERS (For Admin Approval) ───────────────────────
     public function getPendingUsers()
     {
+        $this->ensureUserProfileColumns();
         $sql = "SELECT * FROM User WHERE is_approved = 0 ORDER BY created_at ASC";
         $db = Config::getConnexion();
         try {
@@ -274,6 +306,7 @@ class UserController
     // ── SEARCH USERS (For Admin Search/Filter) ────────────────────────
     public function searchUsers($filters = [])
     {
+        $this->ensureUserProfileColumns();
         $sql = "SELECT * FROM User WHERE 1=1";
         $params = [];
         
@@ -323,6 +356,7 @@ class UserController
     // ── DELETE ────────────────────────────────────────────────────────
     public function deleteUser($id)
     {
+        $this->ensureUserProfileColumns();
         $sql = "DELETE FROM User WHERE id=:id";
         $db = Config::getConnexion();
         try {
@@ -352,6 +386,7 @@ class UserController
     // ── EMAIL EXISTS ──────────────────────────────────────────────────
     public function emailExists($email, $excludeId = null)
     {
+        $this->ensureUserProfileColumns();
         $db = Config::getConnexion();
         if ($excludeId) {
             $q = $db->prepare("SELECT COUNT(*) FROM User WHERE email=:e AND id!=:id");

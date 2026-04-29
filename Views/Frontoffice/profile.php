@@ -10,6 +10,7 @@ $user = $userController->getUserById($_SESSION['user_id']);
 $profileErrors = [];
 $passwordErrors = [];
 $success = "";
+$aiError = "";
 $isFreelancer = $user && (int) $user->getIdRole() === 3;
 
 function isValidProfileName($value)
@@ -31,10 +32,149 @@ function isValidProfilePictureValue($value)
     return (bool) preg_match('/^(\/?[A-Za-z0-9._\-\/]+)$/', $value);
 }
 
+function buildFreelancerProfilePrompt($answers)
+{
+    return "You are helping a freelancer build a professional profile for a marketplace website.
+Generate valid JSON only with exactly these keys:
+- skill_summary
+- bio
+- experience_description
+
+Rules:
+- skill_summary: max 220 characters, compact, professional, no bullet points
+- bio: max 520 characters, warm and professional, first person
+- experience_description: max 720 characters, concrete and credible, first person
+- Do not use markdown
+- Do not include extra keys
+- Stay clearly below every limit
+
+Freelancer answers:
+- Main services: " . $answers['services'] . "
+- Main skills/tools: " . $answers['skills'] . "
+- Years of experience: " . $answers['experience_years'] . "
+- Typical projects/clients: " . $answers['projects'] . "
+- Strong points: " . $answers['strengths'] . "
+- Preferred tone: " . $answers['tone'];
+}
+
+function trimGeneratedProfileField($text, $maxLength)
+{
+    $text = trim(preg_replace('/\s+/', ' ', (string) $text));
+
+    if (mb_strlen($text) <= $maxLength) {
+        return $text;
+    }
+
+    $trimmed = mb_substr($text, 0, $maxLength);
+    $lastSpace = mb_strrpos($trimmed, ' ');
+
+    if ($lastSpace !== false && $lastSpace > (int) ($maxLength * 0.6)) {
+        $trimmed = mb_substr($trimmed, 0, $lastSpace);
+    }
+
+    return rtrim($trimmed, " \t\n\r\0\x0B.,;:-");
+}
+
+function generateFreelancerProfileWithAI($answers)
+{
+    $apiKey = Config::getOpenRouterApiKey();
+    if (!$apiKey) {
+        return ['success' => false, 'message' => 'OPENROUTER_API_KEY is missing on the server.'];
+    }
+
+    $payload = [
+        'model' => 'openrouter/free',
+        'messages' => [
+            [
+                'role' => 'system',
+                'content' => 'You are a professional profile writer. Return JSON only.'
+            ],
+            [
+                'role' => 'user',
+                'content' => buildFreelancerProfilePrompt($answers)
+            ]
+        ],
+        'temperature' => 0.7
+    ];
+
+    $ch = curl_init('https://openrouter.ai/api/v1/chat/completions');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json',
+            'HTTP-Referer: http://localhost:8000',
+            'X-Title: SkillBridge'
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_TIMEOUT => 45
+    ]);
+
+    $response = curl_exec($ch);
+    $curlError = curl_error($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($response === false) {
+        return ['success' => false, 'message' => 'AI request failed: ' . $curlError];
+    }
+
+    $decoded = json_decode($response, true);
+    $content = $decoded['choices'][0]['message']['content'] ?? '';
+
+    if ($httpCode >= 400 || $content === '') {
+        $message = $decoded['error']['message'] ?? 'The AI service returned an unexpected response.';
+        return ['success' => false, 'message' => $message];
+    }
+
+    $json = json_decode(trim($content), true);
+    if (!is_array($json)) {
+        if (preg_match('/\{.*\}/s', $content, $matches)) {
+            $json = json_decode($matches[0], true);
+        }
+    }
+
+    if (!is_array($json)) {
+        return ['success' => false, 'message' => 'The AI response could not be parsed.'];
+    }
+
+    return [
+        'success' => true,
+        'data' => [
+            'skill_summary' => trimGeneratedProfileField($json['skill_summary'] ?? '', 220),
+            'bio' => trimGeneratedProfileField($json['bio'] ?? '', 520),
+            'experience_description' => trimGeneratedProfileField($json['experience_description'] ?? '', 720)
+        ]
+    ];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'update_profile') {
+    if ($action === 'generate_ai_profile' && $isFreelancer) {
+        header('Content-Type: application/json');
+
+        $answers = [
+            'services' => trim($_POST['ai_services'] ?? ''),
+            'skills' => trim($_POST['ai_skills'] ?? ''),
+            'experience_years' => trim($_POST['ai_experience_years'] ?? ''),
+            'projects' => trim($_POST['ai_projects'] ?? ''),
+            'strengths' => trim($_POST['ai_strengths'] ?? ''),
+            'tone' => trim($_POST['ai_tone'] ?? '')
+        ];
+
+        foreach ($answers as $key => $value) {
+            if ($value === '') {
+                echo json_encode(['success' => false, 'message' => 'Please answer all AI questions before generating.']);
+                exit;
+            }
+        }
+
+        $result = generateFreelancerProfileWithAI($answers);
+        echo json_encode($result);
+        exit;
+    } elseif ($action === 'update_profile') {
         $nom = trim($_POST['nom'] ?? '');
         $prenom = trim($_POST['prenom'] ?? '');
         $email = trim($_POST['email'] ?? '');
@@ -161,6 +301,7 @@ $completionPercentage = $isFreelancer ? (int) round(($completedFreelancerFields 
     <title>My Profile - SkillBridge</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/Views/assets/css/skillbridge-front.css">
     <style>
         * {
             margin: 0;
@@ -478,6 +619,143 @@ $completionPercentage = $isFreelancer ? (int) round(($completedFreelancerFields 
             margin-top: 0.45rem;
         }
 
+        .profile-tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            margin-top: 1.5rem;
+        }
+
+        .btn-ai-assist {
+            border: none;
+            border-radius: 999px;
+            padding: 0.8rem 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1f232a 0%, #3f4652 100%);
+            color: white;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .btn-ai-assist:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(31, 35, 42, 0.22);
+        }
+
+        .ai-helper-note {
+            color: var(--text-light);
+            font-size: 0.88rem;
+        }
+
+        .ai-panel {
+            display: none;
+            margin-top: 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+        }
+
+        .ai-panel.is-open {
+            display: block;
+        }
+
+        .ai-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.15rem 1.25rem;
+            background: linear-gradient(135deg, rgba(224, 112, 32, 0.08) 0%, rgba(245, 169, 98, 0.14) 100%);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ai-panel-header h4 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .ai-close-btn {
+            border: none;
+            background: transparent;
+            font-size: 1.1rem;
+            color: var(--text-light);
+        }
+
+        .ai-panel-body {
+            padding: 1.25rem;
+            background: white;
+        }
+
+        .ai-question-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .ai-question-grid .full {
+            grid-column: 1 / -1;
+        }
+
+        .ai-panel textarea,
+        .ai-panel input,
+        .ai-panel select {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        .ai-panel textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .ai-panel textarea:focus,
+        .ai-panel input:focus,
+        .ai-panel select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(224, 112, 32, 0.1);
+            outline: none;
+        }
+
+        .ai-panel-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1.25rem;
+        }
+
+        .ai-status {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .ai-status.error {
+            color: #c33;
+        }
+
+        .ai-status.success {
+            color: #198754;
+        }
+
+        .btn-ai-generate {
+            border: none;
+            border-radius: 10px;
+            padding: 0.85rem 1.25rem;
+            background: var(--primary);
+            color: white;
+            font-weight: 700;
+        }
+
+        .btn-ai-generate:disabled {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
         footer {
             background: var(--secondary);
             color: white;
@@ -515,39 +793,125 @@ $completionPercentage = $isFreelancer ? (int) round(($completedFreelancerFields 
             .freelancer-prompt {
                 padding: 1.5rem;
             }
+
+            .ai-question-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ai-panel-actions,
+            .profile-tools {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        .container {
+            max-width: 1320px;
+        }
+
+        body.skillbridge-front {
+            font-family: 'DM Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                radial-gradient(circle at top center, rgba(224,112,32,.07), transparent 26%),
+                linear-gradient(180deg, #fffdf9 0%, #faf6f0 22%, #f8f1e7 100%);
+            color: #1f1f23;
+        }
+
+        .page-header {
+            background:
+                radial-gradient(circle at top right, rgba(240,138,59,.16), transparent 30%),
+                linear-gradient(135deg, #1e1e20 0%, #2d2d31 100%);
+            border: 1px solid rgba(255,255,255,.06);
+            border-radius: 0 0 28px 28px;
+            box-shadow: 0 20px 40px rgba(30,30,32,.18);
+            margin: 0 1.2rem 2.5rem;
+        }
+
+        .profile-info-card,
+        .form-card,
+        .freelancer-prompt {
+            background: rgba(255,255,255,.9);
+            border: 1px solid #dfd1bd;
+            border-radius: 24px;
+            box-shadow: 0 16px 34px rgba(30,30,32,.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .profile-avatar {
+            width: 118px;
+            height: 118px;
+            box-shadow: 0 18px 34px rgba(224,112,32,.24);
+        }
+
+        .profile-details h2,
+        .form-card-header h3 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .form-card-header {
+            background: linear-gradient(180deg, #fffaf4 0%, #f8f1e7 100%);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .ai-panel input,
+        .ai-panel textarea,
+        .ai-panel select {
+            border-radius: 14px;
+            border-color: #d9c6ad;
+            background: #fffdf9;
+        }
+
+        .btn-update {
+            border-radius: 14px;
+            background: linear-gradient(135deg, #e07020, #f08a3b);
+            box-shadow: 0 14px 26px rgba(224,112,32,.2);
+        }
+
+        .btn-ai-assist {
+            border-radius: 14px;
+            text-decoration: none;
+        }
+
+        .profile-top-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .btn-rating-shortcut {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border-radius: 14px;
+            padding: 0.78rem 1.15rem;
+            font-weight: 800;
+            text-decoration: none;
+            color: #073f38;
+            background: linear-gradient(135deg, #c9fff2 0%, #69dec8 100%);
+            border: 1px solid rgba(33, 150, 130, 0.32);
+            box-shadow: 0 14px 24px rgba(33, 150, 130, 0.16);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+        }
+
+        .btn-rating-shortcut:hover {
+            color: #052f2a;
+            filter: saturate(1.08);
+            transform: translateY(-2px);
+            box-shadow: 0 18px 30px rgba(33, 150, 130, 0.24);
+        }
+
+        .completion-pill {
+            background: rgba(224,112,32,.1);
+            border: 1px solid rgba(224,112,32,.18);
         }
     </style>
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
-        <div class="container">
-            <a class="navbar-brand" href="?action=home">
-                <img src="/Views/assets/img/logo1.png" alt="SkillBridge">
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
-                    <li class="nav-item">
-                        <span class="nav-link">
-                            <i class="fas fa-user-circle me-2"></i><?= htmlspecialchars($_SESSION['user_prenom']) ?>
-                        </span>
-                    </li>
-                    <li class="nav-item">
-                        <a href="?action=home" class="nav-link">
-                            <i class="fas fa-home me-1"></i>Home
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="?action=logout" class="btn-nav-primary ms-2">
-                            <i class="fas fa-sign-out-alt me-1"></i>Logout
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+<body class="skillbridge-front">
+    <?php require __DIR__ . '/partials/front_navbar.php'; ?>
 
     <div class="page-header">
         <div class="container">
@@ -579,6 +943,13 @@ $completionPercentage = $isFreelancer ? (int) round(($completedFreelancerFields 
                     <p style="font-size: 0.85rem; margin-top: 0.5rem; text-transform: capitalize;">Experience: <strong><?= htmlspecialchars($user->getNiveau()) ?></strong></p>
                     <?php if ($isFreelancer && !empty($user->getSkillSummary())): ?>
                         <p><strong>Skill summary:</strong> <?= htmlspecialchars($user->getSkillSummary()) ?></p>
+                    <?php endif; ?>
+                    <?php if ($isFreelancer): ?>
+                        <div class="profile-top-actions">
+                            <a href="?action=myrating" class="btn-rating-shortcut">
+                                <i class="fas fa-star"></i>My Rating
+                            </a>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -629,6 +1000,64 @@ $completionPercentage = $isFreelancer ? (int) round(($completedFreelancerFields 
                     </div>
 
                     <?php if ($isFreelancer): ?>
+                        <div class="profile-tools">
+                            <button type="button" class="btn-ai-assist" id="openAiPanelBtn">
+                                <i class="fas fa-wand-magic-sparkles me-2"></i>Generate With AI
+                            </button>
+                            <span class="ai-helper-note">Answer a few questions, let AI draft the text, then review and save it yourself.</span>
+                        </div>
+
+                        <div class="ai-panel" id="aiProfilePanel">
+                            <div class="ai-panel-header">
+                                <div>
+                                    <h4>AI Profile Assistant</h4>
+                                    <p style="margin: 0.35rem 0 0; color: var(--text-light);">Tell the assistant about your work and it will draft your profile fields automatically.</p>
+                                </div>
+                                <button type="button" class="ai-close-btn" id="closeAiPanelBtn">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="ai-panel-body">
+                                <div class="ai-question-grid">
+                                    <div class="form-group">
+                                        <label for="ai_services">What services do you offer?</label>
+                                        <input type="text" id="ai_services" placeholder="Web development, UI/UX design, branding...">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ai_skills">Main skills or tools</label>
+                                        <input type="text" id="ai_skills" placeholder="PHP, MySQL, Figma, Laravel, Bootstrap...">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ai_experience_years">Years of experience</label>
+                                        <input type="text" id="ai_experience_years" placeholder="2 years, 5 years, beginner with strong projects...">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ai_tone">Preferred tone</label>
+                                        <select id="ai_tone">
+                                            <option value="professional and confident">Professional and confident</option>
+                                            <option value="friendly and professional">Friendly and professional</option>
+                                            <option value="clear and direct">Clear and direct</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group full">
+                                        <label for="ai_projects">What kind of projects or clients do you usually work with?</label>
+                                        <textarea id="ai_projects" placeholder="Small business websites, dashboards, mobile-friendly landing pages, startup branding..."></textarea>
+                                    </div>
+                                    <div class="form-group full">
+                                        <label for="ai_strengths">What are your strongest points?</label>
+                                        <textarea id="ai_strengths" placeholder="Fast delivery, clean code, clear communication, attention to detail..."></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="ai-panel-actions">
+                                    <div class="ai-status" id="aiStatus">The generated content will fill your profile fields automatically, then you can validate it before saving.</div>
+                                    <button type="button" class="btn-ai-generate" id="generateAiProfileBtn">
+                                        <i class="fas fa-bolt me-2"></i>Generate Draft
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="phone">Phone</label>
@@ -711,5 +1140,73 @@ $completionPercentage = $isFreelancer ? (int) round(($completedFreelancerFields 
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <?php if ($isFreelancer): ?>
+    <script>
+        const aiPanel = document.getElementById('aiProfilePanel');
+        const openAiPanelBtn = document.getElementById('openAiPanelBtn');
+        const closeAiPanelBtn = document.getElementById('closeAiPanelBtn');
+        const generateAiProfileBtn = document.getElementById('generateAiProfileBtn');
+        const aiStatus = document.getElementById('aiStatus');
+
+        function setAiStatus(message, type) {
+            aiStatus.textContent = message;
+            aiStatus.className = 'ai-status' + (type ? ' ' + type : '');
+        }
+
+        if (openAiPanelBtn) {
+            openAiPanelBtn.addEventListener('click', function() {
+                aiPanel.classList.add('is-open');
+                setAiStatus('Answer the questions and generate your draft.', '');
+            });
+        }
+
+        if (closeAiPanelBtn) {
+            closeAiPanelBtn.addEventListener('click', function() {
+                aiPanel.classList.remove('is-open');
+            });
+        }
+
+        if (generateAiProfileBtn) {
+            generateAiProfileBtn.addEventListener('click', function() {
+                const formData = new FormData();
+                formData.append('action', 'generate_ai_profile');
+                formData.append('ai_services', document.getElementById('ai_services').value.trim());
+                formData.append('ai_skills', document.getElementById('ai_skills').value.trim());
+                formData.append('ai_experience_years', document.getElementById('ai_experience_years').value.trim());
+                formData.append('ai_projects', document.getElementById('ai_projects').value.trim());
+                formData.append('ai_strengths', document.getElementById('ai_strengths').value.trim());
+                formData.append('ai_tone', document.getElementById('ai_tone').value);
+
+                generateAiProfileBtn.disabled = true;
+                setAiStatus('Generating your profile draft...', '');
+
+                fetch('?action=profile', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (!data.success) {
+                        setAiStatus(data.message || 'The AI draft could not be generated.', 'error');
+                        return;
+                    }
+
+                    document.getElementById('skill_summary').value = data.data.skill_summary || '';
+                    document.getElementById('bio').value = data.data.bio || '';
+                    document.getElementById('experience_description').value = data.data.experience_description || '';
+                    setAiStatus('Draft generated. Review the text, adjust anything you want, then click Save Changes.', 'success');
+                })
+                .catch(function() {
+                    setAiStatus('A network or server error occurred while contacting the AI service.', 'error');
+                })
+                .finally(function() {
+                    generateAiProfileBtn.disabled = false;
+                });
+            });
+        }
+    </script>
+    <?php endif; ?>
 </body>
 </html>

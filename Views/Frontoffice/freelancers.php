@@ -74,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     <title>Browse Freelancers - SkillBridge</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/Views/assets/css/skillbridge-front.css">
     <style>
         * {
             margin: 0;
@@ -732,54 +733,432 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 width: 100%;
             }
         }
+
+        .container {
+            max-width: 1320px;
+        }
+
+        body.skillbridge-front {
+            font-family: 'DM Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                radial-gradient(circle at top center, rgba(224,112,32,.07), transparent 26%),
+                linear-gradient(180deg, #fffdf9 0%, #faf6f0 22%, #f8f1e7 100%);
+            color: #1f1f23;
+        }
+
+        .page-header {
+            background:
+                radial-gradient(circle at top right, rgba(240,138,59,.16), transparent 30%),
+                linear-gradient(135deg, #1e1e20 0%, #2d2d31 100%);
+            border: 1px solid rgba(255,255,255,.06);
+            border-radius: 0 0 28px 28px;
+            box-shadow: 0 20px 40px rgba(30,30,32,.18);
+            margin: 0 1.2rem 2.5rem;
+        }
+
+        .filters-section,
+        .freelancer-card,
+        .modal-shell,
+        .empty-state {
+            background: rgba(255,255,255,.9);
+            border: 1px solid #dfd1bd;
+            border-radius: 24px;
+            box-shadow: 0 16px 34px rgba(30,30,32,.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .filter-group input,
+        .filter-group select {
+            border-radius: 14px;
+            border-color: #d9c6ad;
+            background: #fffdf9;
+        }
+
+        .btn-search,
+        .btn-reset,
+        .btn-interact {
+            border-radius: 14px;
+            font-weight: 700;
+        }
+
+        .btn-search {
+            background: linear-gradient(135deg, #e07020, #f08a3b);
+            box-shadow: 0 14px 26px rgba(224,112,32,.2);
+        }
+
+        .btn-reset {
+            background: rgba(224,112,32,.08);
+            border: 1px solid rgba(224,112,32,.2);
+            color: #e07020;
+        }
+
+        .freelancer-card {
+            box-shadow: 0 16px 28px rgba(30,30,32,.07);
+        }
+
+        .freelancers-shell {
+            padding: 0 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .page-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.85rem;
+            border-radius: 999px;
+            background: rgba(224,112,32,.14);
+            border: 1px solid rgba(240,138,59,.24);
+            color: #ffd8bd;
+            font-weight: 800;
+            font-size: 0.8rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .filters-section {
+            position: relative;
+            overflow: hidden;
+            padding: 1.35rem;
+            margin-bottom: 2.35rem;
+        }
+
+        .filters-section::before {
+            content: "";
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            right: -90px;
+            top: -120px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(224,112,32,.18), transparent 68%);
+            pointer-events: none;
+        }
+
+        .filters-heading {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .filters-heading h2 {
+            margin: 0;
+            color: #292321;
+            font-size: 1.25rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+        }
+
+        .filters-heading span {
+            color: #8a705b;
+            font-size: 0.92rem;
+            font-weight: 700;
+        }
+
+        .filter-group {
+            position: relative;
+            grid-template-columns: 1.25fr repeat(3, minmax(170px, 0.75fr));
+            gap: 0.9rem;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            min-height: 52px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+        }
+
+        .filter-group input::placeholder {
+            color: #9b8370;
+        }
+
+        .filter-buttons {
+            position: relative;
+            justify-content: flex-end;
+        }
+
+        .btn-search,
+        .btn-reset {
+            min-height: 48px;
+            padding-inline: 1.35rem;
+        }
+
+        .btn-reset:hover {
+            background: rgba(224,112,32,.14);
+            color: #c85a14;
+            border-color: rgba(224,112,32,.32);
+            transform: translateY(-2px);
+        }
+
+        .freelancers-grid {
+            grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+            gap: 1.45rem;
+        }
+
+        .freelancer-card {
+            position: relative;
+            overflow: hidden;
+            isolation: isolate;
+            border-color: #ead8c2;
+            background:
+                linear-gradient(145deg, rgba(255,255,255,.96), rgba(255,248,239,.9));
+        }
+
+        .freelancer-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top right, rgba(224,112,32,.16), transparent 34%);
+            z-index: -1;
+        }
+
+        .freelancer-header {
+            position: relative;
+            background:
+                radial-gradient(circle at top right, rgba(255,255,255,.24), transparent 28%),
+                linear-gradient(135deg, #242126 0%, #3b2a20 48%, #e07020 100%);
+            padding: 1.75rem 1.4rem 1.55rem;
+        }
+
+        .freelancer-header::after {
+            content: "";
+            position: absolute;
+            left: 1.25rem;
+            right: 1.25rem;
+            bottom: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.34), transparent);
+        }
+
+        .freelancer-avatar {
+            width: 88px;
+            height: 88px;
+            border: 3px solid rgba(255,255,255,.84);
+            box-shadow: 0 16px 30px rgba(0,0,0,.22);
+        }
+
+        .freelancer-name {
+            font-size: 1.25rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+        }
+
+        .freelancer-role {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 0.45rem;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,.14);
+            border: 1px solid rgba(255,255,255,.16);
+            font-size: 0.82rem;
+            font-weight: 800;
+        }
+
+        .freelancer-body {
+            padding: 1.35rem;
+        }
+
+        .info-item {
+            border-bottom-color: #ead8c2;
+        }
+
+        .info-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-weight: 800;
+            color: #8a705b;
+        }
+
+        .rating-stars {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            color: #e07020;
+            background: #fff2e7;
+            border: 1px solid rgba(224,112,32,.16);
+            border-radius: 999px;
+            padding: 0.35rem 0.7rem;
+        }
+
+        .rating-stars::before {
+            content: "\f005";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: #f5a524;
+        }
+
+        .feedback-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+            color: #7a6656;
+            font-weight: 800;
+        }
+
+        .feedback-inline .like-count {
+            color: #238756;
+        }
+
+        .feedback-inline .dislike-count {
+            color: #d47a15;
+        }
+
+        .feedback-inline + span,
+        .mini-feedback span:not(.clean-feedback),
+        .clean-like-action > span:first-of-type,
+        .clean-dislike-action > span:first-of-type {
+            display: none;
+        }
+
+        .summary-chip {
+            border: 1px solid rgba(224,112,32,.16);
+            background:
+                radial-gradient(circle at top right, rgba(224,112,32,.12), transparent 34%),
+                linear-gradient(135deg, rgba(255,250,244,.94), rgba(255,244,230,.86));
+            color: #554133;
+            font-weight: 600;
+        }
+
+        .expand-toggle {
+            background: linear-gradient(135deg, #e07020, #f08a3b);
+            color: white;
+            border-color: rgba(224,112,32,.28);
+            box-shadow: 0 14px 24px rgba(224,112,32,.18);
+        }
+
+        .expand-toggle:hover {
+            background: linear-gradient(135deg, #c85a14, #e07020);
+            color: white;
+            box-shadow: 0 18px 30px rgba(224,112,32,.26);
+        }
+
+        .mini-feedback {
+            background: #fff8f1;
+            border: 1px solid #ead8c2;
+            color: #705949;
+            font-weight: 800;
+        }
+
+        .mini-feedback i.fa-thumbs-up,
+        .modal-feedback-count i.fa-thumbs-up {
+            color: #238756;
+        }
+
+        .mini-feedback i.fa-thumbs-down,
+        .modal-feedback-count i.fa-thumbs-down {
+            color: #d47a15;
+        }
+
+        .freelancer-modal {
+            background: rgba(23, 20, 18, 0.64);
+        }
+
+        .freelancer-modal-dialog {
+            border: 1px solid rgba(224,112,32,.2);
+            background:
+                radial-gradient(circle at top right, rgba(224,112,32,.08), transparent 30%),
+                #fffaf4;
+        }
+
+        .modal-profile-card {
+            background:
+                radial-gradient(circle at top right, rgba(255,255,255,.18), transparent 32%),
+                linear-gradient(160deg, #201f22 0%, #3a2a20 58%, #e07020 100%);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+        }
+
+        .modal-intro,
+        .modal-block {
+            border-color: #ead8c2;
+            background: rgba(255,255,255,.82);
+        }
+
+        .modal-block h4 {
+            color: #292321;
+            font-weight: 900;
+        }
+
+        .modal-feedback-count {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.75rem 1rem;
+            border-radius: 999px;
+            background: #fff8f1;
+            border: 1px solid #ead8c2;
+            color: #705949;
+        }
+
+        .btn-interact.active {
+            background: linear-gradient(135deg, #e07020, #f08a3b);
+            border-color: rgba(224,112,32,.4);
+            box-shadow: 0 14px 24px rgba(224,112,32,.2);
+        }
+
+        .empty-state {
+            padding: 4.5rem 2rem;
+            background:
+                radial-gradient(circle at top right, rgba(224,112,32,.12), transparent 30%),
+                rgba(255,255,255,.9);
+        }
+
+        .empty-state h2 {
+            font-weight: 900;
+        }
+
+        footer {
+            background: #1e1e20;
+            border-top: 1px solid rgba(224,112,32,.18);
+        }
+
+        @media (max-width: 1100px) {
+            .filter-group {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .freelancers-shell {
+                padding: 0 1rem;
+            }
+
+            .filters-heading {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .filter-group {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
-        <div class="container">
-            <a class="navbar-brand" href="?action=home">
-                <img src="/Views/assets/img/logo1.png" alt="SkillBridge">
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
-                    <li class="nav-item">
-                        <span class="nav-link">
-                            <i class="fas fa-user-circle me-2"></i><?= htmlspecialchars($_SESSION['user_prenom']) ?>
-                        </span>
-                    </li>
-                    <li class="nav-item">
-                        <a href="?action=home" class="nav-link">
-                            <i class="fas fa-home me-1"></i>Home
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="?action=profile" class="nav-link">
-                            <i class="fas fa-user me-1"></i>Profile
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="?action=logout" class="btn-nav-primary ms-2">
-                            <i class="fas fa-sign-out-alt me-1"></i>Logout
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+<body class="skillbridge-front">
+    <?php require __DIR__ . '/partials/front_navbar.php'; ?>
 
     <div class="page-header">
         <div class="container">
+            <div class="page-kicker"><i class="fas fa-user-group"></i> Talent marketplace</div>
             <h1>Find Freelancers</h1>
             <p>Discover and collaborate with talented professionals</p>
         </div>
     </div>
 
-    <main class="container" style="padding: 0 2rem;">
+    <main class="container freelancers-shell">
         <div class="filters-section">
             <form id="freelancerFilterForm" method="GET" action="?action=freelancers">
+                <div class="filters-heading">
+                    <div>
+                        <h2>Find the right profile faster</h2>
+                        <span>Search by name, experience, availability, or minimum rating.</span>
+                    </div>
+                </div>
                 <div class="filter-group">
                     <input type="text" name="search" placeholder="Search by name..." value="<?= htmlspecialchars($search) ?>">
 
@@ -876,6 +1255,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Feedback</span>
+                                <span class="feedback-inline">
+                                    <span class="like-count"><i class="fas fa-thumbs-up"></i> <?= $likes ?></span>
+                                    <span class="dislike-count"><i class="fas fa-thumbs-down"></i> <?= $dislikes ?></span>
+                                </span>
                                 <span><span style="color: var(--primary);">👍 <?= $likes ?></span> <span style="margin-left: 0.5rem; color: #e74c3c;">👎 <?= $dislikes ?></span></span>
                             </div>
 
@@ -885,9 +1268,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                             <div class="card-actions">
                                 <button type="button" class="expand-toggle" onclick="openFreelancerModal(this)">
-                                    Voir freelancer
+                                    View profile <i class="fas fa-arrow-right ms-2"></i>
                                 </button>
                                 <div class="mini-feedback">
+                                    <span class="clean-feedback"><i class="fas fa-thumbs-up"></i> <?= $likes ?></span>
+                                    <span class="clean-feedback"><i class="fas fa-thumbs-down"></i> <?= $dislikes ?></span>
                                     <span>👍 <?= $likes ?></span>
                                     <span>👎 <?= $dislikes ?></span>
                                 </div>
@@ -952,11 +1337,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         <div class="modal-actions">
                             <div class="modal-feedback-count" id="modalFreelancerFeedback"></div>
                             <div class="feedback-actions">
-                                <button class="btn-interact" id="modalLikeButton" type="button">
+                                <button class="btn-interact clean-like-action" id="modalLikeButton" type="button">
+                                    <i class="fas fa-thumbs-up"></i>
                                     <span>👍</span>
                                     <span>Like</span>
                                 </button>
-                                <button class="btn-interact" id="modalDislikeButton" type="button">
+                                <button class="btn-interact clean-dislike-action" id="modalDislikeButton" type="button">
+                                    <i class="fas fa-thumbs-down"></i>
                                     <span>👎</span>
                                     <span>Dislike</span>
                                 </button>
@@ -1083,6 +1470,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             modalFreelancerExperience.innerHTML = formatTextWithBreaks(card.dataset.experience || '');
             modalFreelancerFeedback.textContent = 'Feedback: ' + (card.dataset.likes || '0') + ' likes • ' + (card.dataset.dislikes || '0') + ' dislikes';
 
+            modalFreelancerFeedback.innerHTML = '<i class="fas fa-thumbs-up"></i> ' + (card.dataset.likes || '0') + ' likes <i class="fas fa-thumbs-down ms-2"></i> ' + (card.dataset.dislikes || '0') + ' dislikes';
             modalLikeButton.dataset.freelancer = card.dataset.id || '';
             modalDislikeButton.dataset.freelancer = card.dataset.id || '';
             updateModalInteractionState(card);

@@ -8,7 +8,7 @@ $success = '';
 
 function isValidRegisterName($value)
 {
-    return (bool) preg_match("/^[a-zA-ZÃ€-Ã¿][a-zA-ZÃ€-Ã¿' -]{1,49}$/u", $value);
+    return (bool) preg_match("/^[\\p{L}][\\p{L}' -]{1,49}$/u", $value);
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -74,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Sign Up - SkillBridge</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/Views/assets/css/skillbridge-front.css">
     <style>
         * {
             margin: 0;
@@ -90,10 +91,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             --bg-light: #f8f9fa;
         }
 
-        body {
+        body.skillbridge-front {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+        }
+
+        .auth-page {
+            min-height: calc(100vh - var(--nav-height));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -379,7 +384,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     </style>
 </head>
-<body>
+<body class="skillbridge-front">
+    <?php include __DIR__ . '/partials/front_navbar.php'; ?>
+    <div class="auth-page">
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
@@ -476,6 +483,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <?php endif; ?>
         </div>
+    </div>
     </div>
 
     <script>

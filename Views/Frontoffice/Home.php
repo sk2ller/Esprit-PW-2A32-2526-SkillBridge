@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../Controllers/UserController.php';
-$role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
+$role = $_SESSION['user_role'] ?? null;
+$isLoggedIn = isset($_SESSION['user_id']);
 $heroVideoSrc = '/Views/assets/img/hero-showcase.mp4';
 $heroVideoPoster = '/Views/assets/img/logo1.png';
 ?>
@@ -10,699 +11,116 @@ $heroVideoPoster = '/Views/assets/img/logo1.png';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home - SkillBridge</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-        }
-
-        :root {
-            --primary: #e07020;
-            --primary-dark: #c85a14;
-            --secondary: #1a1a1a;
-            --text: #2d3436;
-            --text-light: #636e72;
-            --border: #dfe6e9;
-            --bg-light: #f8f9fa;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: var(--text);
-            background: white;
-        }
-
-        /* NAVBAR */
-        .navbar-custom {
-            background:
-                linear-gradient(90deg, #b84f12 0%, #e07020 16%, #f3a25a 30%, #ffffff 46%, #ffffff 100%);
-            border-bottom: 1px solid var(--border);
-            padding: 1rem 0;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-        }
-
-        .navbar-brand {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.15rem 0;
-            margin-left: -1.6rem;
-        }
-
-        .navbar-brand img {
-            height: 58px;
-            filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.18));
-        }
-
-        .navbar-custom .nav-link {
-            color: var(--text-light) !important;
-            font-weight: 500;
-            margin: 0 0.5rem;
-            transition: color 0.3s;
-            font-size: 0.95rem;
-        }
-
-        .navbar-custom .nav-link:hover {
-            color: var(--primary) !important;
-        }
-
-        .navbar-custom .nav-link.active {
-            color: var(--primary) !important;
-        }
-
-        .btn-nav-primary {
-            background: var(--primary);
-            color: white !important;
-            border-radius: 6px;
-            padding: 0.5rem 1.25rem;
-            text-decoration: none;
-            transition: all 0.3s;
-            display: inline-block;
-            border: none;
-            font-weight: 500;
-        }
-
-        .btn-nav-primary:hover {
-            background: var(--primary-dark);
-            color: white !important;
-        }
-
-        /* HERO SECTION */
-        .hero {
-            color: white;
-            padding: 0;
-            position: relative;
-            overflow: hidden;
-            min-height: 84vh;
-            background: #101010;
-            display: flex;
-            align-items: stretch;
-        }
-
-        .hero .container {
-            position: relative;
-            z-index: 3;
-            width: 100%;
-            display: flex;
-            align-items: center;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                linear-gradient(90deg, rgba(8, 8, 8, 0.9) 0%, rgba(8, 8, 8, 0.76) 30%, rgba(8, 8, 8, 0.52) 54%, rgba(8, 8, 8, 0.68) 100%),
-                linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.42) 100%);
-            z-index: 1;
-        }
-
-        .hero::after {
-            content: '';
-            position: absolute;
-            left: -7%;
-            bottom: -18%;
-            width: 440px;
-            height: 440px;
-            background: radial-gradient(circle, rgba(224, 112, 32, 0.22) 0%, rgba(224, 112, 32, 0.08) 42%, transparent 72%);
-            border-radius: 50%;
-            z-index: 2;
-        }
-
-        .hero-content {
-            max-width: 650px;
-            padding: 6.5rem 0;
-        }
-
-        .hero-kicker {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.65rem;
-            padding: 0.65rem 1rem;
-            margin-bottom: 1.4rem;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            backdrop-filter: blur(10px);
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .hero h1 {
-            font-size: 3.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            line-height: 1.2;
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            color: rgba(255,255,255,0.9);
-            margin-bottom: 2rem;
-            line-height: 1.6;
-            max-width: 560px;
-        }
-
-        .hero-buttons {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .hero-video-shell {
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-        }
-
-        .hero-video-card {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-
-        .hero-video-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(10, 10, 10, 0.08) 0%, rgba(10, 10, 10, 0.32) 100%);
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        .hero-video {
-            width: 100%;
-            height: 100%;
-            display: block;
-            object-fit: cover;
-            background: #111;
-        }
-
-        .hero-video-caption {
-            position: absolute;
-            right: 2rem;
-            bottom: 2rem;
-            z-index: 4;
-            width: 160px;
-            height: 160px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 45%, transparent 72%);
-            pointer-events: none;
-        }
-
-        .hero-video-fallback {
-            position: absolute;
-            inset: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 0.75rem;
-            padding: 2rem;
-            text-align: center;
-            z-index: 3;
-            background: linear-gradient(135deg, rgba(224, 112, 32, 0.2) 0%, rgba(17, 17, 17, 0.85) 100%);
-        }
-
-        .hero-video-fallback.show {
-            display: flex;
-        }
-
-        .hero-video-fallback i {
-            font-size: 2.5rem;
-            color: #fff;
-        }
-
-        .hero-video-fallback p {
-            margin: 0;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.95rem;
-        }
-
-        .btn-hero {
-            padding: 0.75rem 2rem;
-            border-radius: 6px;
-            font-weight: 600;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .btn-hero-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-hero-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(224, 112, 32, 0.3);
-            color: white;
-        }
-
-        .btn-hero-outline {
-            background: transparent;
-            color: white;
-            border: 2px solid white;
-        }
-
-        .btn-hero-outline:hover {
-            background: white;
-            color: var(--primary);
-        }
-
-        /* SECTION STYLING */
-        .section-default {
-            padding: 6rem 2rem;
-        }
-
-        .section-alt {
-            background: var(--bg-light);
-        }
-
-        .section-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 1.5rem;
-        }
-
-        .section-subtitle {
-            font-size: 1.1rem;
-            color: var(--text-light);
-            margin-bottom: 3rem;
-            max-width: 600px;
-        }
-
-        /* FEATURE CARDS */
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 3rem;
-            margin-top: 3rem;
-        }
-
-        .feature-card {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            text-align: center;
-            transition: all 0.3s;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        }
-
-        .feature-card:hover {
-            border-color: var(--primary);
-            box-shadow: 0 12px 30px rgba(224, 112, 32, 0.15);
-            transform: translateY(-8px);
-        }
-
-        .feature-icon {
-            font-size: 3rem;
-            color: var(--primary);
-            margin-bottom: 1.5rem;
-        }
-
-        .feature-card h3 {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 1rem;
-        }
-
-        .feature-card p {
-            color: var(--text-light);
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-
-        /* DASHBOARD CARDS */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
-        }
-
-        .dashboard-card {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            transition: all 0.3s;
-        }
-
-        .dashboard-card:hover {
-            border-color: var(--primary);
-            box-shadow: 0 12px 30px rgba(224, 112, 32, 0.1);
-        }
-
-        .dashboard-icon {
-            font-size: 2.5rem;
-            color: var(--primary);
-            margin-bottom: 1.5rem;
-        }
-
-        .dashboard-card h3 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 0.75rem;
-        }
-
-        .dashboard-card p {
-            color: var(--text-light);
-            font-size: 0.95rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .btn-secondary {
-            display: inline-block;
-            padding: 0.6rem 1.5rem;
-            background: var(--bg-light);
-            color: var(--text);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
-
-        .btn-secondary:hover {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        /* FOOTER */
-        footer {
-            background: var(--secondary);
-            color: white;
-            padding: 3rem 2rem 1.5rem;
-            text-align: center;
-            margin-top: 5rem;
-        }
-
-        footer p {
-            margin: 0;
-            font-size: 0.9rem;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 768px) {
-            .hero {
-                min-height: 76vh;
-            }
-
-            .hero h1 {
-                font-size: 2.2rem;
-            }
-
-            .hero p {
-                font-size: 1rem;
-            }
-
-            .hero-buttons {
-                flex-direction: column;
-            }
-
-            .btn-hero {
-                width: 100%;
-                text-align: center;
-            }
-
-            .hero-content {
-                padding: 5rem 0 3rem;
-            }
-
-            .hero-video-caption {
-                right: -1.5rem;
-                bottom: 1rem;
-                width: 120px;
-                height: 120px;
-            }
-
-            .section-default {
-                padding: 4rem 1.5rem;
-            }
-
-            .section-title {
-                font-size: 2rem;
-            }
-
-            .feature-grid {
-                grid-template-columns: 1fr;
-                gap: 2rem;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="/Views/assets/css/skillbridge-front.css">
 </head>
-<body>
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
-        <div class="container">
-            <a class="navbar-brand" href="?action=home">
-                <img src="/Views/assets/img/logo1.png" alt="SkillBridge">
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
-                    <?php if (isset($_SESSION['user_id'])): ?>
-                        <li class="nav-item">
-                            <span class="nav-link">
-                                <i class="fas fa-user-circle me-2"></i><?= htmlspecialchars($_SESSION['user_prenom']) ?>
-                            </span>
-                        </li>
-                        <li class="nav-item">
-                            <a href="?action=profile" class="nav-link">
-                                <i class="fas fa-sliders me-1"></i>Profile
-                            </a>
-                        </li>
-                        <?php if ($role == 1): ?>
-                        <li class="nav-item">
-                            <a href="?action=userlist" class="nav-link">
-                                <i class="fas fa-cog me-1"></i>Admin
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <li class="nav-item">
-                            <a href="?action=logout" class="btn-nav-primary ms-2">
-                                <i class="fas fa-sign-out-alt me-1"></i>Logout
-                            </a>
-                        </li>
-                    <?php else: ?>
-                        <li class="nav-item">
-                            <a href="?action=login" class="nav-link">
-                                <i class="fas fa-sign-in-alt me-1"></i>Login
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="?action=register" class="btn-nav-primary ms-2">
-                                <i class="fas fa-user-plus me-1"></i>Sign Up
-                            </a>
-                        </li>
-                    <?php endif; ?>
-                </ul>
-            </div>
-        </div>
-    </nav>
+<body class="skillbridge-front">
+    <?php include __DIR__ . '/partials/front_navbar.php'; ?>
 
-    <!-- HERO SECTION -->
-    <section class="hero">
-        <div class="hero-video-shell">
-            <div class="hero-video-card">
-                <video class="hero-video" autoplay muted loop playsinline preload="metadata" poster="<?= htmlspecialchars($heroVideoPoster) ?>" id="heroVideo">
+    <div class="front-page">
+        <section class="hero-surface">
+            <div class="hero-video-wrap">
+                <video autoplay muted loop playsinline poster="<?= htmlspecialchars($heroVideoPoster) ?>">
                     <source src="<?= htmlspecialchars($heroVideoSrc) ?>" type="video/mp4">
                 </video>
-
-                <div class="hero-video-fallback" id="heroVideoFallback">
-                    <i class="fas fa-video"></i>
-                    <p>Add your hero video at <strong><?= htmlspecialchars($heroVideoSrc) ?></strong> to display it here.</p>
-                </div>
-
-                <div class="hero-video-caption">
-                </div>
             </div>
-        </div>
-        <div class="container">
+
             <div class="hero-content">
                 <div class="hero-kicker">
                     <i class="fas fa-bolt"></i>
                     <span>Trusted talent, ready to build</span>
                 </div>
-                <h1>Connect With Top Talent</h1>
-                <p>Discover skilled freelancers or offer your expertise. SkillBridge connects you with the perfect match for every project.</p>
-                <div class="hero-buttons">
-                    <?php if (!isset($_SESSION['user_id'])): ?>
-                        <a href="?action=login" class="btn-hero btn-hero-primary">Get Started</a>
-                        <a href="?action=register" class="btn-hero btn-hero-outline">Learn More</a>
+                <h1 class="hero-title">Connect With <span>Top Talent</span></h1>
+                <p class="hero-desc">SkillBridge relie les clients et les freelancers dans une interface moderne, claire et inspiree du style premium de votre autre projet.</p>
+                <div class="hero-actions">
+                    <?php if ($isLoggedIn): ?>
+                        <a href="?action=profile" class="sb-btn-outline"><i class="fas fa-user"></i> Mon profil</a>
+                    <?php else: ?>
+                        <a href="?action=login" class="sb-btn"><i class="fas fa-right-to-bracket"></i> Login</a>
+                        <a href="?action=register" class="sb-btn-outline"><i class="fas fa-user-plus"></i> Sign Up</a>
                     <?php endif; ?>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- FEATURES SECTION -->
-    <section class="section-default">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="section-title">Why Choose SkillBridge?</h2>
-                <p class="section-subtitle">We make it easy to find the right talent or showcase your skills to the world.</p>
+        <section class="section-surface" id="categories">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Pourquoi <span>SkillBridge</span></h2>
+                    <p class="section-subtitle">Une experience plus elegante et plus lisible pour presenter les talents, les services et l espace utilisateur.</p>
+                </div>
             </div>
+
             <div class="feature-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <h3>Easy Search</h3>
-                    <p>Find professionals with the exact skills you need using our advanced filtering system.</p>
+                    <div class="feature-icon"><i class="fas fa-magnifying-glass"></i></div>
+                    <h3>Recherche plus claire</h3>
+                    <p>Trouvez rapidement les bons profils et les bons services avec un affichage plus propre et plus moderne.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-lock"></i>
-                    </div>
-                    <h3>Secure & Safe</h3>
-                    <p>Your data is protected with industry-leading security measures and verified profiles.</p>
+                    <div class="feature-icon"><i class="fas fa-shield-heart"></i></div>
+                    <h3>Confiance & securite</h3>
+                    <p>Les informations importantes sont mieux mises en avant pour rassurer les utilisateurs.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-zap"></i>
-                    </div>
-                    <h3>Fast & Reliable</h3>
-                    <p>Connect instantly and start collaborating on projects with minimal setup time.</p>
+                    <div class="feature-icon"><i class="fas fa-gauge-high"></i></div>
+                    <h3>Navigation plus fluide</h3>
+                    <p>Le style reprend un dashboard moderne avec cartes, surfaces et contrastes plus forts.</p>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- DASHBOARD PREVIEW SECTION -->
-    <?php if (isset($_SESSION['user_id'])): ?>
-    <section class="section-default section-alt">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="section-title">Your Dashboard</h2>
-                <p class="section-subtitle">Manage your profile and explore opportunities all in one place.</p>
+        <section class="section-surface">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Votre <span>Espace</span></h2>
+                    <p class="section-subtitle">Les acces rapides changent selon votre role, tout en conservant la logique actuelle du projet.</p>
+                </div>
             </div>
+
             <div class="dashboard-grid">
                 <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <h3>My Profile</h3>
-                    <p>View and manage your profile information, skills, and availability.</p>
-                    <a href="?action=profile" class="btn-secondary">View Profile</a>
+                    <div class="dashboard-icon"><i class="fas fa-user"></i></div>
+                    <h3>Mon profil</h3>
+                    <p>Consultez et mettez a jour vos informations personnelles.</p>
+                    <a href="?action=profile" class="sb-btn-soft">Voir profil</a>
                 </div>
-                
+
                 <?php if ($role == 2): ?>
-                <!-- FEATURES FOR CLIENTS -->
                 <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <h3>Browse Freelancers</h3>
-                    <p>Find and review talented freelancers for your projects. Compare ratings and skills.</p>
-                    <a href="?action=freelancers" class="btn-secondary">Explore Freelancers</a>
+                    <div class="dashboard-icon"><i class="fas fa-user-group"></i></div>
+                    <h3>Freelancers</h3>
+                    <p>Parcourez les talents disponibles et choisissez le profil adapte a votre besoin.</p>
+                    <a href="?action=freelancers" class="sb-btn-soft">Explorer</a>
                 </div>
                 <?php elseif ($role == 3): ?>
-                <!-- FEATURES FOR FREELANCERS -->
                 <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <h3>My Rating</h3>
-                    <p>Track your professional reputation, client feedback, and performance metrics.</p>
-                    <a href="?action=myrating" class="btn-secondary">View Rating</a>
+                    <div class="dashboard-icon"><i class="fas fa-briefcase"></i></div>
+                    <h3>Dashboard Freelancer</h3>
+                    <p>Accedez a votre sidebar freelancer pour gerer votre CRUD services de maniere complete.</p>
+                    <a href="?action=my_services" class="sb-btn-soft">Ouvrir mes services</a>
                 </div>
                 <?php endif; ?>
-                
+
                 <?php if ($role == 1): ?>
-                <!-- FEATURES FOR ADMIN -->
                 <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-users-cog"></i>
-                    </div>
-                    <h3>User Management</h3>
-                    <p>Manage users, approve freelancers, and handle account administration.</p>
-                    <a href="?action=userlist" class="btn-secondary">Go to Admin</a>
+                    <div class="dashboard-icon"><i class="fas fa-chart-line"></i></div>
+                    <h3>Dashboard Admin</h3>
+                    <p>Accedez a la zone d administration avec un habillage proche de project - Copy.</p>
+                    <a href="?action=statistics" class="sb-btn-soft">Ouvrir</a>
                 </div>
                 <?php endif; ?>
-                
+
+                <?php if (!$isLoggedIn): ?>
                 <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </div>
-                    <h3>Logout</h3>
-                    <p>Safely exit your account when you're done.</p>
-                    <a href="?action=logout" class="btn-secondary">Sign Out</a>
+                    <div class="dashboard-icon"><i class="fas fa-rocket"></i></div>
+                    <h3>Creer un compte</h3>
+                    <p>Inscrivez-vous pour acceder a votre espace utilisateur, votre profil et aux fonctionnalites de la plateforme.</p>
+                    <a href="?action=register" class="sb-btn-soft">S inscrire</a>
                 </div>
+                <?php endif; ?>
             </div>
-        </div>
-    </section>
-    <?php else: ?>
-    <section class="section-default section-alt">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="section-title">Get Started Today</h2>
-                <p class="section-subtitle">Join thousands of professionals and clients using SkillBridge.</p>
-            </div>
-            <div class="dashboard-grid">
-                <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-briefcase"></i>
-                    </div>
-                    <h3>For Clients</h3>
-                    <p>Find amazing freelancers to bring your projects to life.</p>
-                    <a href="?action=register" class="btn-secondary">Browse Freelancers</a>
-                </div>
-                <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <h3>For Freelancers</h3>
-                    <p>Showcase your skills and grow your client base.</p>
-                    <a href="?action=register" class="btn-secondary">Get Started</a>
-                </div>
-                <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-headset"></i>
-                    </div>
-                    <h3>Support</h3>
-                    <p>We're here to help you succeed every step of the way.</p>
-                    <a href="#" class="btn-secondary">Contact Us</a>
-                </div>
-            </div>
-        </div>
-    </section>
-    <?php endif; ?>
-
-    <!-- FOOTER -->
-    <footer>
-        <p>&copy; 2026 SkillBridge. All rights reserved.</p>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const heroVideo = document.getElementById('heroVideo');
-        const heroVideoFallback = document.getElementById('heroVideoFallback');
-
-        if (heroVideo && heroVideoFallback) {
-            heroVideo.addEventListener('error', function() {
-                heroVideoFallback.classList.add('show');
-            });
-
-            heroVideo.addEventListener('loadeddata', function() {
-                heroVideoFallback.classList.remove('show');
-            });
-        }
-    </script>
+        </section>
+    </div>
 </body>
 </html>

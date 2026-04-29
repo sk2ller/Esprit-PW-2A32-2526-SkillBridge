@@ -26,6 +26,7 @@ $likePercentage = $totalVotes > 0 ? round(($likes / $totalVotes) * 100) : 0;
     <title>My Rating - SkillBridge</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/Views/assets/css/skillbridge-front.css">
     <style>
         * {
             margin: 0;
@@ -373,63 +374,481 @@ $likePercentage = $totalVotes > 0 ? round(($likes / $totalVotes) * 100) : 0;
                 font-size: 1.4rem;
             }
         }
+
+        .container {
+            max-width: 1320px;
+        }
+
+        body.skillbridge-front {
+            font-family: 'DM Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                radial-gradient(circle at top center, rgba(224,112,32,.07), transparent 26%),
+                linear-gradient(180deg, #fffdf9 0%, #faf6f0 22%, #f8f1e7 100%);
+            color: #1f1f23;
+        }
+
+        .page-header {
+            background:
+                radial-gradient(circle at top right, rgba(240,138,59,.16), transparent 30%),
+                linear-gradient(135deg, #1e1e20 0%, #2d2d31 100%);
+            border: 1px solid rgba(255,255,255,.06);
+            border-radius: 0 0 28px 28px;
+            box-shadow: 0 20px 40px rgba(30,30,32,.18);
+            margin: 0 1.2rem 2.5rem;
+        }
+
+        .rating-card,
+        .stat-card,
+        .satisfaction-card,
+        .tips-section,
+        .cta-banner {
+            background: rgba(255,255,255,.9);
+            border: 1px solid #dfd1bd;
+            border-radius: 24px;
+            box-shadow: 0 16px 34px rgba(30,30,32,.08);
+        }
+
+        .rating-value,
+        .satisfaction-percentage {
+            color: #e07020;
+        }
+
+        .progress-bar-custom {
+            background: #eadcc8;
+            border-radius: 999px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #e07020, #f08a3b);
+        }
+
+        .rating-page-shell {
+            padding: 0 2rem 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .rating-page-shell .page-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.85rem;
+            border-radius: 999px;
+            background: rgba(224,112,32,.14);
+            border: 1px solid rgba(240,138,59,.24);
+            color: #ffd8bd;
+            font-weight: 800;
+            font-size: 0.8rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .rating-grid {
+            grid-template-columns: minmax(320px, 1.05fr) minmax(320px, .95fr);
+            align-items: stretch;
+        }
+
+        .rating-card {
+            position: relative;
+            overflow: hidden;
+            isolation: isolate;
+            min-height: 100%;
+        }
+
+        .rating-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at top right, rgba(224,112,32,.16), transparent 34%),
+                linear-gradient(135deg, rgba(255,255,255,.92), rgba(255,249,241,.86));
+            z-index: -1;
+        }
+
+        .rating-card-main {
+            border-color: rgba(224,112,32,.28);
+            box-shadow: 0 22px 48px rgba(224,112,32,.12);
+        }
+
+        .rating-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: #7d624d;
+            background: rgba(224,112,32,.1);
+            border: 1px solid rgba(224,112,32,.14);
+            border-radius: 999px;
+            padding: 0.5rem 0.85rem;
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .rating-stars {
+            display: flex;
+            justify-content: center;
+            gap: 0.35rem;
+            color: #f5a524;
+            font-size: 2.15rem;
+            letter-spacing: 0;
+            text-shadow: 0 10px 20px rgba(245,165,36,.18);
+        }
+
+        .rating-stars .empty-star {
+            color: #e5d3bd;
+            text-shadow: none;
+        }
+
+        .rating-value {
+            font-size: clamp(3rem, 6vw, 4.6rem);
+            line-height: 1;
+            letter-spacing: -0.08em;
+        }
+
+        .rating-max {
+            font-weight: 800;
+            color: #927562;
+        }
+
+        .rating-total {
+            width: min(100%, 380px);
+            margin-left: auto;
+            margin-right: auto;
+            border-top-color: rgba(224,112,32,.18);
+        }
+
+        .feedback-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1.5rem 0 2rem;
+        }
+
+        .feedback-mini {
+            border-radius: 20px;
+            padding: 1.35rem 1rem;
+            background: #fffaf4;
+            border: 1px solid #ead8c2;
+        }
+
+        .feedback-mini.positive {
+            background: linear-gradient(135deg, rgba(39,174,96,.12), rgba(255,255,255,.88));
+            border-color: rgba(39,174,96,.2);
+        }
+
+        .feedback-mini.negative {
+            background: linear-gradient(135deg, rgba(243,156,18,.14), rgba(255,255,255,.88));
+            border-color: rgba(243,156,18,.24);
+        }
+
+        .feedback-number {
+            font-size: 2.55rem;
+            line-height: 1;
+            font-weight: 900;
+            margin-bottom: 0.45rem;
+        }
+
+        .feedback-mini.positive .feedback-number {
+            color: #238756;
+        }
+
+        .feedback-mini.negative .feedback-number {
+            color: #d47a15;
+        }
+
+        .feedback-label {
+            color: #806a58;
+            font-size: 0.88rem;
+            font-weight: 800;
+        }
+
+        .satisfaction-block {
+            padding: 1.25rem;
+            border-radius: 22px;
+            background: rgba(255,250,244,.86);
+            border: 1px solid #ead8c2;
+        }
+
+        .satisfaction-title {
+            color: #806a58;
+            font-size: 0.82rem;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 0.8rem;
+        }
+
+        .satisfaction-result {
+            text-align: center;
+            color: #e07020;
+            font-weight: 900;
+            margin-top: 0.65rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+            text-align: left;
+            padding: 1.65rem;
+        }
+
+        .stat-card::after {
+            content: "";
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            right: -34px;
+            top: -38px;
+            border-radius: 50%;
+            background: rgba(224,112,32,.1);
+        }
+
+        .stat-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            background: #fff2e7;
+            color: #e07020;
+            font-size: 1.2rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .stat-card.success .stat-icon {
+            background: rgba(39,174,96,.12);
+            color: #238756;
+        }
+
+        .stat-card.warning .stat-icon {
+            background: rgba(243,156,18,.14);
+            color: #d47a15;
+        }
+
+        .stat-number {
+            color: #242126;
+            letter-spacing: -0.04em;
+        }
+
+        .tips-section h2 {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .tips-section h2 i {
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: #fff2e7;
+            color: #e07020;
+        }
+
+        .tip-box {
+            border-left: 0;
+            border: 1px solid #ead8c2;
+            background:
+                linear-gradient(135deg, rgba(255,255,255,.92), rgba(255,248,239,.88));
+            border-radius: 18px;
+            transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+        }
+
+        .tip-box:hover {
+            transform: translateY(-3px);
+            border-color: rgba(224,112,32,.3);
+            box-shadow: 0 16px 28px rgba(30,30,32,.08);
+        }
+
+        .tip-box h4 {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            color: #2b2520;
+        }
+
+        .tip-box h4 i {
+            color: #e07020;
+        }
+
+        .cta-banner {
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at top right, rgba(255,255,255,.24), transparent 28%),
+                linear-gradient(135deg, #201f22 0%, #3a2a20 48%, #e07020 100%);
+            border: 1px solid rgba(224,112,32,.22);
+            box-shadow: 0 22px 44px rgba(30,30,32,.16);
+        }
+
+        .cta-banner a {
+            border-radius: 999px;
+            box-shadow: 0 14px 24px rgba(0,0,0,.16);
+        }
+
+        .page-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.85rem;
+            border-radius: 999px;
+            background: rgba(224,112,32,.14);
+            border: 1px solid rgba(240,138,59,.24);
+            color: #ffd8bd;
+            font-weight: 800;
+            font-size: 0.8rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon,
+        .tips-section h2,
+        .tip-box h4,
+        .cta-banner a {
+            font-size: 0;
+        }
+
+        .stat-icon::before {
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 1.2rem;
+        }
+
+        .stat-card.success .stat-icon::before {
+            content: "\f164";
+        }
+
+        .stat-card.warning .stat-icon::before {
+            content: "\f165";
+        }
+
+        .stat-card:not(.success):not(.warning) .stat-icon::before {
+            content: "\f005";
+        }
+
+        .tips-section h2::before {
+            content: "\f0eb";
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: #fff2e7;
+            color: #e07020;
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 1.05rem;
+        }
+
+        .tips-section h2::after {
+            content: "How to Improve Your Rating";
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2b2520;
+        }
+
+        .tip-box h4::before {
+            content: "\f058";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 1rem;
+            color: #e07020;
+        }
+
+        .tip-box h4::after {
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+
+        .tip-box:nth-of-type(1) h4::after {
+            content: "Complete Your Profile";
+        }
+
+        .tip-box:nth-of-type(2) h4::after {
+            content: "Be Professional";
+        }
+
+        .tip-box:nth-of-type(3) h4::after {
+            content: "Communicate Clearly";
+        }
+
+        .tip-box:nth-of-type(4) h4::after {
+            content: "Update Your Availability";
+        }
+
+        .tip-box:nth-of-type(5) h4::after {
+            content: "Enhance Your Skills";
+        }
+
+        .cta-banner a::before {
+            content: "Go to My Profile";
+            font-size: 1rem;
+        }
+
+        .cta-banner a::after {
+            content: "\f061";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 0.9rem;
+            margin-left: 0.65rem;
+        }
+
+        footer {
+            background: #1e1e20;
+            border-top: 1px solid rgba(224,112,32,.18);
+        }
+
+        @media (max-width: 992px) {
+            .rating-grid,
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .rating-page-shell {
+                padding: 0 1rem;
+            }
+
+            .feedback-split {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
-<body>
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
-        <div class="container">
-            <a class="navbar-brand" href="?action=home">
-                <img src="/Views/assets/img/logo1.png" alt="SkillBridge">
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
-                    <li class="nav-item">
-                        <span class="nav-link">
-                            <i class="fas fa-user-circle me-2"></i><?= htmlspecialchars($_SESSION['user_prenom']) ?>
-                        </span>
-                    </li>
-                    <li class="nav-item">
-                        <a href="?action=home" class="nav-link">
-                            <i class="fas fa-home me-1"></i>Home
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="?action=profile" class="nav-link">
-                            <i class="fas fa-user me-1"></i>Profile
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="?action=logout" class="btn-nav-primary ms-2">
-                            <i class="fas fa-sign-out-alt me-1"></i>Logout
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+<body class="skillbridge-front">
+    <?php require __DIR__ . '/partials/front_navbar.php'; ?>
 
     <!-- PAGE HEADER -->
     <div class="page-header">
         <div class="container">
+            <div class="page-kicker"><i class="fas fa-chart-line"></i> Freelancer reputation</div>
             <h1>Your Rating & Feedback</h1>
             <p>Track your professional reputation and client satisfaction</p>
         </div>
     </div>
 
-    <main class="container" style="padding: 0 2rem; margin-bottom: 2rem;">
+    <main class="container rating-page-shell">
         <!-- MAIN RATING & STATS -->
         <div class="rating-grid">
             <!-- Overall Rating -->
-            <div class="rating-card">
-                <p class="rating-label">Your Current Rating</p>
+            <div class="rating-card rating-card-main">
+                <p class="rating-label"><i class="fas fa-star"></i>Your Current Rating</p>
                 <div class="rating-stars">
                     <?php
                     $fullStars = floor($rating);
                     $hasHalfStar = ($rating - $fullStars) >= 0.5;
+                    ob_start();
                     
                     for ($i = 0; $i < 5; $i++) {
                         if ($i < $fullStars) {
@@ -438,6 +857,17 @@ $likePercentage = $totalVotes > 0 ? round(($likes / $totalVotes) * 100) : 0;
                             echo '½';
                         } else {
                             echo '☆';
+                        }
+                    }
+                    ob_end_clean();
+
+                    for ($i = 0; $i < 5; $i++) {
+                        if ($i < $fullStars) {
+                            echo '<i class="fas fa-star"></i>';
+                        } elseif ($i == $fullStars && $hasHalfStar) {
+                            echo '<i class="fas fa-star-half-alt"></i>';
+                        } else {
+                            echo '<i class="far fa-star empty-star"></i>';
                         }
                     }
                     ?>
@@ -453,27 +883,25 @@ $likePercentage = $totalVotes > 0 ? round(($likes / $totalVotes) * 100) : 0;
 
             <!-- Statistics -->
             <div class="rating-card">
-                <p class="rating-label">Feedback Statistics</p>
+                <p class="rating-label"><i class="fas fa-comments"></i>Feedback Statistics</p>
                 
-                <div style="margin: 1.5rem 0;">
-                    <div style="display: flex; justify-content: space-around; margin-bottom: 2rem;">
-                        <div>
-                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--success);"><?= $likes ?></div>
-                            <div style="color: var(--text-light); font-size: 0.9rem;">Positive</div>
-                        </div>
-                        <div>
-                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--warning);"><?= $dislikes ?></div>
-                            <div style="color: var(--text-light); font-size: 0.9rem;">Negative</div>
-                        </div>
+                <div class="feedback-split">
+                    <div class="feedback-mini positive">
+                        <div class="feedback-number"><?= $likes ?></div>
+                        <div class="feedback-label"><i class="fas fa-thumbs-up me-1"></i>Positive</div>
+                    </div>
+                    <div class="feedback-mini negative">
+                        <div class="feedback-number"><?= $dislikes ?></div>
+                        <div class="feedback-label"><i class="fas fa-thumbs-down me-1"></i>Negative</div>
                     </div>
                 </div>
 
-                <div>
-                    <div style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 0.5rem;">Satisfaction Rate</div>
+                <div class="satisfaction-block">
+                    <div class="satisfaction-title">Satisfaction Rate</div>
                     <div class="progress-bar-custom">
                         <div class="progress-fill" style="width: <?= $likePercentage ?>%"></div>
                     </div>
-                    <div style="text-align: center; color: var(--primary); font-weight: 700; margin-top: 0.5rem;">
+                    <div class="satisfaction-result">
                         <?= $likePercentage ?>% Positive
                     </div>
                 </div>

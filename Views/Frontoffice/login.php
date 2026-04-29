@@ -4,6 +4,8 @@ require_once __DIR__ . '/../../Controllers/JWT.php';
 
 $userController = new UserController();
 $errors = [];
+$loginHeading = 'Welcome Back';
+$loginSubtitle = 'Sign in to your SkillBridge account';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
@@ -55,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Sign In - SkillBridge</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/Views/assets/css/skillbridge-front.css">
     <style>
         * {
             margin: 0;
@@ -71,12 +74,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             --bg-light: #f8f9fa;
         }
 
-        body {
+        body.skillbridge-front {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+        }
+
+        .auth-page {
+            min-height: calc(100vh - var(--nav-height));
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
         }
 
         .navbar-custom {
@@ -268,38 +277,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     </style>
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-custom">
-        <div class="container">
-            <a class="navbar-brand" href="?action=home">
-                <img src="/Views/assets/img/logo1.png" alt="SkillBridge">
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
-                    <li class="nav-item">
-                        <a href="?action=home" class="nav-link">
-                            <i class="fas fa-home me-1"></i>Home
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="?action=register" class="btn-nav-primary ms-2">
-                            <i class="fas fa-user-plus me-1"></i>Sign Up
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+<body class="skillbridge-front">
+    <?php include __DIR__ . '/partials/front_navbar.php'; ?>
 
+    <div class="auth-page">
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
                 <img src="/Views/assets/img/logo1.png" alt="SkillBridge">
-                <h1>Welcome Back</h1>
-                <p>Sign in to your SkillBridge account</p>
+                <h1><?= htmlspecialchars($loginHeading) ?></h1>
+                <p><?= htmlspecialchars($loginSubtitle) ?></p>
             </div>
 
             <form method="POST" action="">
@@ -336,6 +323,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Don't have an account? <a href="?action=register">Sign up here</a></p>
             </div>
         </div>
+    </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
