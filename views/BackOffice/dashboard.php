@@ -8,6 +8,8 @@ $serviceController = new ServiceController();
 $categorieController = new CategorieController();
 
 $sStats = $serviceController->getStats();
+$serviceInsights = $serviceController->getAdminInsights();
+$categoryPerformance = $serviceController->getCategoryPerformance();
 $recentServices = $serviceController->listAll(null, null, null);
 $categories = $categorieController->listCategories();
 
@@ -21,6 +23,9 @@ include __DIR__ . '/sidebar.php';
       <div class="topbar-bread">Geeks Admin &rsaquo; <span style="color:var(--text-secondary)">Vue d ensemble</span></div>
     </div>
     <div class="topbar-actions">
+      <a href="index.php?page=admin_export_pdf&type=dashboard" class="topbar-btn topbar-btn-outline js-admin-export">
+        <i class="fas fa-file-pdf"></i> Export PDF
+      </a>
       <a href="index.php?page=admin_categories" class="topbar-btn topbar-btn-outline">
         <i class="fas fa-tags"></i> Categories
       </a>
@@ -55,6 +60,29 @@ include __DIR__ . '/sidebar.php';
         <div class="sw-icon"><i class="fas fa-tags"></i></div>
         <div class="sw-value"><?= count($categories) ?></div>
         <div class="sw-label">Categories</div>
+      </div>
+    </div>
+
+    <div class="admin-insights-grid" style="margin-bottom:2rem;">
+      <div class="admin-info-card">
+        <div class="admin-info-kicker">Prix moyen</div>
+        <div class="admin-info-value"><?= number_format($serviceInsights['average_price'] ?? 0, 2) ?> DT</div>
+        <div class="admin-info-note">Ticket moyen constate sur les services publies.</div>
+      </div>
+      <div class="admin-info-card">
+        <div class="admin-info-kicker">Delai moyen</div>
+        <div class="admin-info-value"><?= number_format($serviceInsights['average_delay'] ?? 0, 0) ?> jours</div>
+        <div class="admin-info-note">Promesse de livraison moyenne sur l ensemble du catalogue.</div>
+      </div>
+      <div class="admin-info-card">
+        <div class="admin-info-kicker">Categorie phare</div>
+        <div class="admin-info-value"><?= htmlspecialchars($serviceInsights['top_category'] ?? 'Aucune') ?></div>
+        <div class="admin-info-note"><?= (int) ($serviceInsights['top_category_count'] ?? 0) ?> service(s) repertories dans cette categorie.</div>
+      </div>
+      <div class="admin-info-card">
+        <div class="admin-info-kicker">Miniatures</div>
+        <div class="admin-info-value"><?= (int) ($serviceInsights['with_thumbnail'] ?? 0) ?></div>
+        <div class="admin-info-note"><?= (int) ($serviceInsights['without_thumbnail'] ?? 0) ?> service(s) restent sans visuel.</div>
       </div>
     </div>
 
@@ -150,6 +178,35 @@ include __DIR__ . '/sidebar.php';
         </div>
       </div>
 
+    </div>
+
+    <div class="admin-table-wrap">
+      <div class="admin-table-header">
+        <div class="admin-table-title">Performance par categorie</div>
+        <div style="font-size:0.82rem; color:var(--text-muted);">Statistiques metier consolidees</div>
+      </div>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Categorie</th>
+            <th>Total services</th>
+            <th>Actifs</th>
+            <th>En attente</th>
+            <th>Prix moyen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach (array_slice($categoryPerformance, 0, 6) as $row): ?>
+          <tr>
+            <td class="table-service-name"><?= htmlspecialchars($row['nom_categorie']) ?></td>
+            <td><?= (int) $row['total_services'] ?></td>
+            <td><?= (int) $row['actifs'] ?></td>
+            <td><?= (int) $row['en_attente'] ?></td>
+            <td><?= number_format((float) ($row['average_price'] ?? 0), 2) ?> DT</td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
     </div>
 
   </div>

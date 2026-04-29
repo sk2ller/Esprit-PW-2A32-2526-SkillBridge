@@ -361,6 +361,97 @@ class ServiceController
         }
     }
 
+    public function getAdminInsights()
+    {
+        $db = getDB();
+        $insights = [
+            'average_price' => 0,
+            'average_delay' => 0,
+            'with_thumbnail' => 0,
+            'without_thumbnail' => 0,
+            'top_category' => 'Aucune',
+            'top_category_count' => 0,
+            'top_freelancer' => 'Aucun',
+            'top_freelancer_count' => 0
+        ];
+
+        try {
+            $summarySql = "SELECT 
+                              AVG(prix) AS average_price,
+                              AVG(delai_livraison) AS average_delay,
+                              SUM(CASE WHEN COALESCE(NULLIF(thumbnail, ''), NULLIF(image, '')) IS NOT NULL THEN 1 ELSE 0 END) AS with_thumbnail,
+                              SUM(CASE WHEN COALESCE(NULLIF(thumbnail, ''), NULLIF(image, '')) IS NULL THEN 1 ELSE 0 END) AS without_thumbnail
+                           FROM services";
+            $summaryQuery = $db->prepare($summarySql);
+            $summaryQuery->execute();
+            $summary = $summaryQuery->get_result()->fetch_assoc();
+
+            if ($summary) {
+                $insights['average_price'] = (float) ($summary['average_price'] ?? 0);
+                $insights['average_delay'] = (float) ($summary['average_delay'] ?? 0);
+                $insights['with_thumbnail'] = (int) ($summary['with_thumbnail'] ?? 0);
+                $insights['without_thumbnail'] = (int) ($summary['without_thumbnail'] ?? 0);
+            }
+
+            $categorySql = "SELECT c.nom_categorie, COUNT(*) AS total
+                            FROM services s
+                            JOIN categorie c ON s.id_categorie = c.id_categorie
+                            GROUP BY s.id_categorie, c.nom_categorie
+                            ORDER BY total DESC, c.nom_categorie ASC
+                            LIMIT 1";
+            $categoryQuery = $db->prepare($categorySql);
+            $categoryQuery->execute();
+            $topCategory = $categoryQuery->get_result()->fetch_assoc();
+
+            if ($topCategory) {
+                $insights['top_category'] = $topCategory['nom_categorie'];
+                $insights['top_category_count'] = (int) $topCategory['total'];
+            }
+
+            $freelancerSql = "SELECT freelancer_name, COUNT(*) AS total
+                              FROM services
+                              GROUP BY freelancer_name
+                              ORDER BY total DESC, freelancer_name ASC
+                              LIMIT 1";
+            $freelancerQuery = $db->prepare($freelancerSql);
+            $freelancerQuery->execute();
+            $topFreelancer = $freelancerQuery->get_result()->fetch_assoc();
+
+            if ($topFreelancer) {
+                $insights['top_freelancer'] = $topFreelancer['freelancer_name'];
+                $insights['top_freelancer_count'] = (int) $topFreelancer['total'];
+            }
+
+            return $insights;
+        } catch (Exception $e) {
+            echo 'Error: ' . $e->getMessage();
+            return $insights;
+        }
+    }
+
+    public function getCategoryPerformance()
+    {
+        $sql = "SELECT c.nom_categorie,
+                       COUNT(s.id_service) AS total_services,
+                       AVG(s.prix) AS average_price,
+                       SUM(CASE WHEN s.statut = 'actif' THEN 1 ELSE 0 END) AS actifs,
+                       SUM(CASE WHEN s.statut = 'en_attente' THEN 1 ELSE 0 END) AS en_attente
+                FROM categorie c
+                LEFT JOIN services s ON s.id_categorie = c.id_categorie
+                GROUP BY c.id_categorie, c.nom_categorie
+                ORDER BY total_services DESC, c.nom_categorie ASC";
+        $db = getDB();
+
+        try {
+            $query = $db->prepare($sql);
+            $query->execute();
+            return $query->get_result()->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            echo 'Error: ' . $e->getMessage();
+            return [];
+        }
+    }
+
     public function index()
     {
         $search = $_GET['search'] ?? null;

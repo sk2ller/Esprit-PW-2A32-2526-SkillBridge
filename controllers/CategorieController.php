@@ -43,6 +43,35 @@ class CategorieController
         }
     }
 
+    public function getCategoryInsights()
+    {
+        $categories = $this->listCategories();
+        $insights = [
+            'total' => count($categories),
+            'with_services' => 0,
+            'empty' => 0,
+            'most_used' => 'Aucune',
+            'most_used_count' => 0
+        ];
+
+        foreach ($categories as $category) {
+            $count = (int) ($category['nb_services'] ?? 0);
+
+            if ($count > 0) {
+                $insights['with_services']++;
+            } else {
+                $insights['empty']++;
+            }
+
+            if ($count > $insights['most_used_count']) {
+                $insights['most_used'] = $category['nom_categorie'];
+                $insights['most_used_count'] = $count;
+            }
+        }
+
+        return $insights;
+    }
+
     public function getCategorieById($id)
     {
         $sql = "SELECT * FROM categorie WHERE id_categorie = ?";

@@ -2,6 +2,9 @@
 $pageTitle = 'Gestion des Services - Admin Geeks';
 include __DIR__ . '/sidebar.php';
 $success = $_GET['success'] ?? null;
+$serviceController = new ServiceController();
+$serviceInsights = $serviceController->getAdminInsights();
+$categoryPerformance = $serviceController->getCategoryPerformance();
 ?>
 
 <main class="admin-main">
@@ -9,6 +12,11 @@ $success = $_GET['success'] ?? null;
     <div>
       <div class="topbar-title">Services</div>
       <div class="topbar-bread">Geeks Admin &rsaquo; <span style="color:var(--text-secondary)">Gestion des services</span></div>
+    </div>
+    <div class="topbar-actions">
+      <a href="index.php?page=admin_export_pdf&type=services<?= isset($_GET['statut']) ? '&statut=' . urlencode($_GET['statut']) : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?><?= isset($_GET['sort']) ? '&sort=' . urlencode($_GET['sort']) : '' ?>" class="topbar-btn topbar-btn-outline js-admin-export">
+        <i class="fas fa-file-pdf"></i> Export PDF
+      </a>
     </div>
   </div>
 
@@ -37,7 +45,8 @@ $success = $_GET['success'] ?? null;
       </div>
     </div>
 
-    <div class="admin-table-wrap">
+    <div class="admin-split-layout">
+      <div class="admin-table-wrap">
       <div class="admin-table-header" style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
         <div class="admin-table-title">Liste des services</div>
 
@@ -183,6 +192,90 @@ $success = $_GET['success'] ?? null;
           <?php endif; ?>
         </tbody>
       </table>
+      </div>
+
+      <aside class="admin-side-panel">
+        <div class="admin-side-card">
+          <div class="admin-side-head">
+            <div>
+              <div class="admin-table-title" style="font-size:1.08rem;">Statistiques</div>
+              <div class="admin-side-subtitle">Choisissez votre vue metier</div>
+            </div>
+            <div class="admin-view-switch">
+              <button type="button" class="admin-view-btn active" data-admin-view="graph">Graphique</button>
+              <button type="button" class="admin-view-btn" data-admin-view="table">Tableau</button>
+            </div>
+          </div>
+
+          <div class="admin-view-panel active" data-admin-panel="graph">
+            <?php
+            $totalServices = max(1, (int) ($stats['total'] ?? 0));
+            $graphRows = [
+              ['label' => 'Actifs', 'value' => (int) ($stats['actif'] ?? 0), 'class' => 'is-success'],
+              ['label' => 'En attente', 'value' => (int) ($stats['en_attente'] ?? 0), 'class' => 'is-warning'],
+              ['label' => 'Suspendus', 'value' => (int) (($stats['suspendu'] ?? 0) + ($stats['rejete'] ?? 0) + ($stats['rejetee'] ?? 0)), 'class' => 'is-danger']
+            ];
+            ?>
+            <div class="mini-bars">
+              <?php foreach ($graphRows as $item): ?>
+              <div class="mini-bar-item">
+                <div class="mini-bar-meta">
+                  <span><?= $item['label'] ?></span>
+                  <strong><?= $item['value'] ?></strong>
+                </div>
+                <div class="mini-bar-track">
+                  <div class="mini-bar-fill <?= $item['class'] ?>" style="width: <?= min(100, ($item['value'] / $totalServices) * 100) ?>%;"></div>
+                </div>
+              </div>
+              <?php endforeach; ?>
+            </div>
+
+            <div class="admin-side-metrics">
+              <div class="side-metric-box">
+                <div class="admin-info-kicker">Prix moyen</div>
+                <div class="admin-info-value" style="font-size:1.28rem;"><?= number_format($serviceInsights['average_price'] ?? 0, 2) ?> DT</div>
+              </div>
+              <div class="side-metric-box">
+                <div class="admin-info-kicker">Freelancer principal</div>
+                <div class="admin-info-value" style="font-size:1.1rem;"><?= htmlspecialchars($serviceInsights['top_freelancer'] ?? 'Aucun') ?></div>
+                <div class="admin-info-note"><?= (int) ($serviceInsights['top_freelancer_count'] ?? 0) ?> service(s)</div>
+              </div>
+              <div class="side-metric-box">
+                <div class="admin-info-kicker">Visuels</div>
+                <div class="admin-info-value" style="font-size:1.1rem;"><?= (int) ($serviceInsights['with_thumbnail'] ?? 0) ?> / <?= (int) ($stats['total'] ?? 0) ?></div>
+                <div class="admin-info-note">services avec miniature</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-view-panel" data-admin-panel="table">
+            <div class="side-table-wrap">
+              <table class="side-stats-table">
+                <thead>
+                  <tr>
+                    <th>Categorie</th>
+                    <th>Total</th>
+                    <th>Prix</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php foreach (array_slice($categoryPerformance, 0, 6) as $row): ?>
+                  <tr>
+                    <td><?= htmlspecialchars($row['nom_categorie']) ?></td>
+                    <td><?= (int) $row['total_services'] ?></td>
+                    <td><?= number_format((float) ($row['average_price'] ?? 0), 0) ?> DT</td>
+                  </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+            <div class="admin-info-note" style="margin-top:12px;">
+              Categorie dominante : <strong><?= htmlspecialchars($serviceInsights['top_category'] ?? 'Aucune') ?></strong>
+              (<?= (int) ($serviceInsights['top_category_count'] ?? 0) ?> service(s))
+            </div>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 </main>
@@ -199,5 +292,25 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 <?php endif; ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const viewButtons = document.querySelectorAll('[data-admin-view]');
+  const panels = document.querySelectorAll('[data-admin-panel]');
+
+  viewButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      const target = button.getAttribute('data-admin-view');
+
+      viewButtons.forEach(function (btn) {
+        btn.classList.toggle('active', btn === button);
+      });
+
+      panels.forEach(function (panel) {
+        panel.classList.toggle('active', panel.getAttribute('data-admin-panel') === target);
+      });
+    });
+  });
+});
+</script>
 
 <?php include __DIR__ . '/footer.php'; ?>

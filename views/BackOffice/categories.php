@@ -1,6 +1,8 @@
 <?php
 $pageTitle = 'Categories - Admin Geeks';
 include __DIR__ . '/sidebar.php';
+$categorieController = new CategorieController();
+$categoryInsights = $categorieController->getCategoryInsights();
 $success = $_GET['success'] ?? null;
 $messages = [
     '1' => 'Categorie creee avec succes.',
@@ -18,6 +20,9 @@ $messages = [
       </div>
     </div>
     <div class="topbar-actions">
+      <a href="index.php?page=admin_export_pdf&type=categories" class="topbar-btn topbar-btn-outline js-admin-export">
+        <i class="fas fa-file-pdf"></i> Export PDF
+      </a>
       <a href="index.php?page=admin_categorie_create" class="topbar-btn topbar-btn-primary">
         <i class="fas fa-plus"></i> Nouvelle Categorie
       </a>
@@ -25,6 +30,35 @@ $messages = [
   </div>
 
   <div class="admin-content">
+
+    <div class="stats-grid" style="margin-bottom:1.5rem;">
+      <div class="stat-widget purple">
+        <div class="sw-icon"><i class="fas fa-tags"></i></div>
+        <div class="sw-value"><?= $categoryInsights['total'] ?? 0 ?></div>
+        <div class="sw-label">Categories</div>
+      </div>
+      <div class="stat-widget green">
+        <div class="sw-icon"><i class="fas fa-layer-group"></i></div>
+        <div class="sw-value"><?= $categoryInsights['with_services'] ?? 0 ?></div>
+        <div class="sw-label">Avec services</div>
+      </div>
+      <div class="stat-widget orange">
+        <div class="sw-icon"><i class="fas fa-box-open"></i></div>
+        <div class="sw-value"><?= $categoryInsights['empty'] ?? 0 ?></div>
+        <div class="sw-label">Sans service</div>
+      </div>
+      <div class="stat-widget blue">
+        <div class="sw-icon"><i class="fas fa-crown"></i></div>
+        <div class="sw-value"><?= (int) ($categoryInsights['most_used_count'] ?? 0) ?></div>
+        <div class="sw-label"><?= htmlspecialchars($categoryInsights['most_used'] ?? 'Aucune') ?></div>
+      </div>
+    </div>
+
+    <div class="admin-info-card" style="margin-bottom:1.5rem;">
+      <div class="admin-info-kicker">Lecture rapide</div>
+      <div class="admin-info-value"><?= htmlspecialchars($categoryInsights['most_used'] ?? 'Aucune') ?></div>
+      <div class="admin-info-note">Categorie la plus representee actuellement avec <?= (int) ($categoryInsights['most_used_count'] ?? 0) ?> service(s) actifs.</div>
+    </div>
 
     <div style="margin-bottom:1.5rem; display:flex; gap:8px; align-items:center;">
       <label style="font-weight:600; color:var(--text-muted); font-size:0.9rem;">Trier par :</label>

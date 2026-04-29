@@ -4,6 +4,7 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/controllers/ServiceController.php';
 require_once __DIR__ . '/controllers/CategorieController.php';
 require_once __DIR__ . '/controllers/ChatController.php';
+require_once __DIR__ . '/controllers/AdminReportController.php';
 
 $page = $_GET['page'] ?? 'home';
 $role = $_GET['role'] ?? 'client';
@@ -12,6 +13,7 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
 $serviceCtrl = new ServiceController();
 $categorieCtrl = new CategorieController();
 $chatCtrl = new ChatController();
+$adminReportCtrl = new AdminReportController();
 
 // Set role in session
 if (isset($_GET['role'])) {
@@ -54,6 +56,9 @@ switch ($page) {
     // Admin
     case 'admin_dashboard':
         require_once __DIR__ . '/views/BackOffice/dashboard.php';
+        break;
+    case 'admin_export_pdf':
+        $adminReportCtrl->exportPdf($_GET['type'] ?? 'dashboard');
         break;
     case 'admin_services':
         $serviceCtrl->adminIndex();

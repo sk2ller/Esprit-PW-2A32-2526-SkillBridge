@@ -24,7 +24,7 @@ $isEdit = isset($service) && $service;
         <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" id="serviceForm">
           <div class="form-group">
             <label class="form-label">Titre du service <span style="color:#ef4444">*</span></label>
             <input type="text" id="titre" name="titre" class="form-control"
@@ -73,7 +73,7 @@ $isEdit = isset($service) && $service;
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
             <div class="form-group">
               <label class="form-label">Prix (DT) <span style="color:#ef4444">*</span></label>
-              <input type="number" id="prix" name="prix" class="form-control" min="1" step="0.01"
+              <input type="number" id="prix" name="prix" class="form-control" step="0.01"
                      value="<?= $service['prix'] ?? '' ?>" placeholder="Ex: 99.00"
                      style="<?= isset($errors['prix']) ? 'border-color: #ef4444; background-color: rgba(239, 68, 68, 0.05);' : '' ?>">
               <?php if (isset($errors['prix'])): ?>
@@ -84,7 +84,7 @@ $isEdit = isset($service) && $service;
             </div>
             <div class="form-group">
               <label class="form-label">Delai de livraison (jours) <span style="color:#ef4444">*</span></label>
-              <input type="number" id="delai_livraison" name="delai_livraison" class="form-control" min="1"
+              <input type="number" id="delai_livraison" name="delai_livraison" class="form-control"
                      value="<?= $service['delai_livraison'] ?? '' ?>" placeholder="Ex: 7"
                      style="<?= isset($errors['delai_livraison']) ? 'border-color: #ef4444; background-color: rgba(239, 68, 68, 0.05);' : '' ?>">
               <?php if (isset($errors['delai_livraison'])): ?>
@@ -145,5 +145,19 @@ $isEdit = isset($service) && $service;
 $scriptFile = $isEdit ? 'edit_service.js' : 'add_service.js';
 echo '<script src="views/assets/js/' . $scriptFile . '"></script>';
 ?>
+<script>
+<?php if (!empty($error) || !empty($errors)): ?>
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({
+      icon: 'error',
+      title: 'Formulaire invalide',
+      text: <?= json_encode(!empty($error) ? $error : reset($errors)) ?>,
+      confirmButtonColor: '#7c3aed'
+    });
+  }
+});
+<?php endif; ?>
+</script>
 
 <?php include __DIR__ . '/footer.php'; ?>

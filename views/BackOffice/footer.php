@@ -1,10 +1,34 @@
 
 </div><!-- end admin-content -->
 </main><!-- end admin-main -->
+<iframe name="adminExportFrame" id="adminExportFrame" style="position:absolute; width:1px; height:1px; border:0; left:-9999px; top:-9999px;"></iframe>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener('click', function (event) {
   const trigger = event.target.closest('.js-swal-confirm');
+  const exportTrigger = event.target.closest('.js-admin-export');
+
+  if (exportTrigger) {
+    event.preventDefault();
+    const exportFrame = document.getElementById('adminExportFrame');
+
+    if (exportFrame) {
+      exportFrame.src = exportTrigger.href;
+    } else {
+      window.open(exportTrigger.href, 'adminExportFrame');
+    }
+
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'success',
+        title: 'Export lance',
+        text: 'La preparation du document a commence sans quitter cette page.',
+        timer: 1800,
+        showConfirmButton: false
+      });
+    }
+    return;
+  }
 
   if (!trigger) {
     return;
