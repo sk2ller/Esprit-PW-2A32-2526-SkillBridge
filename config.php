@@ -2,7 +2,12 @@
 class Config
 {
     private static $connexion = null;
-    private static $openRouterApiKey = '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';
+    private static $openRouterApiKey = '';
+    private static $emailJsServiceId = 'service_saxy6dj';
+    private static $emailJsTemplateId = 'template_1ndnibx';
+    private static $emailJsSecurityTemplateId = '';
+    private static $emailJsPublicKey = 'kOZhnkpxmJa5vxl1f';
+    private static $emailJsAccessToken = 'FDkvPiSWgNuNGiuyVmMwj';
     
     public static function getConnexion()
     {
@@ -29,6 +34,27 @@ class Config
         }
 
         return self::$openRouterApiKey;
+    }
+
+    public static function getEmailJsConfig()
+    {
+        return [
+            'service_id' => self::envOrDefault('EMAILJS_SERVICE_ID', self::$emailJsServiceId),
+            'template_id' => self::envOrDefault('EMAILJS_TEMPLATE_ID', self::$emailJsTemplateId),
+            'security_template_id' => self::envOrDefault('EMAILJS_SECURITY_TEMPLATE_ID', self::$emailJsSecurityTemplateId),
+            'public_key' => self::envOrDefault('EMAILJS_PUBLIC_KEY', self::$emailJsPublicKey),
+            'access_token' => self::envOrDefault('EMAILJS_ACCESS_TOKEN', self::$emailJsAccessToken),
+        ];
+    }
+
+    private static function envOrDefault($name, $default)
+    {
+        $value = getenv($name);
+        if ($value !== false && trim($value) !== '') {
+            return trim($value);
+        }
+
+        return $default;
     }
 }
 ?>

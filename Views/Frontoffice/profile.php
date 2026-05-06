@@ -125,6 +125,9 @@ function generateFreelancerProfileWithAI($answers)
 
     if ($httpCode >= 400 || $content === '') {
         $message = $decoded['error']['message'] ?? 'The AI service returned an unexpected response.';
+        if (stripos($message, 'User not found') !== false) {
+            $message = 'OpenRouter rejected the configured API key. Please generate a new OpenRouter key and update config.php or OPENROUTER_API_KEY.';
+        }
         return ['success' => false, 'message' => $message];
     }
 
@@ -152,7 +155,35 @@ function generateFreelancerProfileWithAI($answers)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'generate_ai_profile' && $isFreelancer) {
+    if ($action === 'face_register') {
+        header('Content-Type: application/json');
+        try {
+            $descriptor = json_decode($_POST['descriptor'] ?? '', true);
+            if (!is_array($descriptor) || count($descriptor) < 100) {
+                throw new RuntimeException('Face scan failed. Please center your face and try again.');
+            }
+
+            $userController->saveFaceDescriptor($user->getIdUser(), array_map('floatval', $descriptor));
+            $userController->logSecurityEvent($user->getIdUser(), $user->getEmail(), 'face_verification_enabled', 'success', 'Face descriptor saved');
+            echo json_encode(['success' => true, 'message' => 'Face Verification enabled successfully.']);
+        } catch (Throwable $exception) {
+            $userController->logSecurityEvent($user->getIdUser(), $user->getEmail(), 'face_verification_failed', 'error', $exception->getMessage());
+            echo json_encode(['success' => false, 'message' => $exception->getMessage()]);
+        }
+        exit;
+    } elseif ($action === 'face_disable') {
+        $userController->disableFaceVerification($user->getIdUser());
+        $userController->logSecurityEvent($user->getIdUser(), $user->getEmail(), 'face_verification_disabled', 'success', 'Face verification disabled from profile');
+        $success = "Face Verification disabled successfully.";
+    } elseif ($action === 'two_factor_enable') {
+        $userController->setTwoFactorEnabled($user->getIdUser(), 1);
+        $userController->logSecurityEvent($user->getIdUser(), $user->getEmail(), '2fa_enabled', 'success', 'Email 2FA enabled from profile');
+        $success = "Email 2FA enabled successfully. Your next login will require an email code.";
+    } elseif ($action === 'two_factor_disable') {
+        $userController->setTwoFactorEnabled($user->getIdUser(), 0);
+        $userController->logSecurityEvent($user->getIdUser(), $user->getEmail(), '2fa_disabled', 'success', 'Email 2FA disabled from profile');
+        $success = "Email 2FA disabled successfully.";
+    } elseif ($action === 'generate_ai_profile' && $isFreelancer) {
         header('Content-Type: application/json');
 
         $answers = [
@@ -212,8 +243,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $profileErrors['bio'] = "Bio must stay under 600 characters.";
             }
             if ($profilePicture !== '') {
-                if (strlen($profilePicture) > 255) {
-                    $profileErrors['profile_picture'] = "Profile picture path is too long.";
+                if (mb_strlen($profilePicture) > 1024) {
+                    $profileErrors['profile_picture'] = "Profile picture URL/path is too long. Keep it under 1024 characters.";
                 } elseif (!isValidProfilePictureValue($profilePicture)) {
                     $profileErrors['profile_picture'] = "Use a valid image URL or image path.";
                 }
@@ -223,6 +254,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if ($experienceDescription !== '' && mb_strlen($experienceDescription) > 800) {
                 $profileErrors['experience_description'] = "Experience description must stay under 800 characters.";
+            }
+        }
+
+        if (!empty($profileErrors)) {
+            $user->setNom($nom);
+            $user->setPrenom($prenom);
+            $user->setEmail($email);
+
+            if ($isFreelancer) {
+                $user->setPhone($phone);
+                $user->setBio($bio);
+                $user->setProfilePicture($profilePicture);
+                $user->setSkillSummary($skillSummary);
+                $user->setExperienceDescription($experienceDescription);
             }
         }
 
@@ -271,10 +316,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (empty($passwordErrors)) {
             $userController->updatePassword($user->getIdUser(), $new);
+            $userController->logSecurityEvent($user->getIdUser(), $user->getEmail(), 'password_changed', 'success', 'Password changed from profile');
             $success = "Password changed successfully.";
         }
     }
 }
+
+$securityState = $userController->getUserSecurityState($user->getIdUser());
+$securityLogs = $userController->getRecentSecurityLogs($user->getIdUser(), 8);
+$faceVerificationEnabled = (int)($securityState['face_verification_enabled'] ?? 0) === 1;
+$faceVerificationSetupAt = $securityState['face_verification_setup_at'] ?? null;
+$twoFactorEnabled = (int)($securityState['two_factor_enabled'] ?? 0) === 1 && !empty($securityState['two_factor_setup_at']);
 
 $profilePicture = $user->getProfilePicture();
 $avatarText = strtoupper(mb_substr($user->getPrenom(), 0, 1) . mb_substr($user->getNom(), 0, 1));
@@ -904,9 +956,461 @@ $completionPercentage = $isFreelancer ? (int) round(($completedFreelancerFields 
             box-shadow: 0 18px 30px rgba(33, 150, 130, 0.24);
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .profile-layout {
+            display: grid;
+            grid-template-columns: 260px minmax(0, 1fr);
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .profile-side-nav {
+            position: sticky;
+            top: 96px;
+            padding: 1rem;
+            border-radius: 22px;
+            background: rgba(255,255,255,.9);
+            border: 1px solid #dfd1bd;
+            box-shadow: 0 16px 34px rgba(30,30,32,.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .profile-side-nav-title {
+            color: #8b6f58;
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin: 0 0 0.85rem;
+        }
+
+        .profile-side-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.9rem 0.95rem;
+            border-radius: 16px;
+            color: #3a3029;
+            text-decoration: none;
+            font-weight: 800;
+            transition: background 0.22s ease, color 0.22s ease, transform 0.22s ease;
+        }
+
+        .profile-side-link i {
+            color: #e07020;
+            width: 18px;
+            text-align: center;
+        }
+
+        .profile-side-link.active,
+        .profile-side-link:hover {
+            color: #fff;
+            background: linear-gradient(135deg, #e07020, #f08a3b);
+            transform: translateX(3px);
+            box-shadow: 0 12px 22px rgba(224,112,32,.18);
+        }
+
+        .profile-side-link.active i,
+        .profile-side-link:hover i {
+            color: #fff;
+        }
+
+        .face-verify-panel {
+            margin-bottom: 1.4rem;
+            padding: 1.25rem;
+            border-radius: 18px;
+            background:
+                radial-gradient(circle at top right, rgba(224,112,32,.18), transparent 38%),
+                linear-gradient(135deg, #fffaf4, #fff0e3);
+            border: 1px solid rgba(224,112,32,.22);
+            box-shadow: 0 18px 38px rgba(104, 72, 44, .08);
+        }
+
+        .face-verify-panel h4 {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            color: #3a2b22;
+            font-weight: 900;
+            margin-bottom: 0.45rem;
+        }
+
+        .face-verify-panel p {
+            color: #7b6654;
+            margin-bottom: 1rem;
+        }
+
+        .btn-face-verify {
+            border: none;
+            border-radius: 14px;
+            padding: 0.78rem 1.1rem;
+            font-weight: 800;
+            color: #fff;
+            background: linear-gradient(135deg, #e07020, #f5a04f);
+            box-shadow: 0 14px 26px rgba(224,112,32,.22);
+            transition: transform .22s ease, box-shadow .22s ease;
+        }
+
+        .btn-face-verify:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 32px rgba(224,112,32,.3);
+        }
+
+        .face-status {
+            margin-top: 0.85rem;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #7b6654;
+        }
+
+        .face-status.success {
+            color: #257a4b;
+        }
+
+        .face-status.error {
+            color: #ba4b44;
+        }
+
+        .security-status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .security-status-card {
+            padding: 1rem;
+            border-radius: 18px;
+            background: #fffaf4;
+            border: 1px solid #ead8c2;
+        }
+
+        .security-status-label {
+            color: #7b6654;
+            font-size: .82rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .security-status-value {
+            color: #2f2925;
+            font-size: 1rem;
+            font-weight: 900;
+            margin-top: .35rem;
+        }
+
+        .security-status-value.enabled {
+            color: #257a4b;
+        }
+
+        .security-status-value.disabled {
+            color: #ba4b44;
+        }
+
+        .security-status-actions {
+            margin-top: .85rem;
+        }
+
+        .security-toggle-form {
+            margin: 0;
+        }
+
+        .btn-security-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .45rem;
+            width: 100%;
+            border-radius: 13px;
+            border: 1px solid rgba(224,112,32,.2);
+            padding: .68rem .8rem;
+            font-weight: 900;
+            color: #fff;
+            background: linear-gradient(135deg, #e07020, #f5a04f);
+            box-shadow: 0 12px 22px rgba(224,112,32,.18);
+            transition: transform .22s ease, box-shadow .22s ease;
+        }
+
+        .btn-security-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 28px rgba(224,112,32,.26);
+        }
+
+        .btn-security-toggle.is-danger {
+            color: #ba4b44;
+            background: #fff5f4;
+            border-color: rgba(186,75,68,.22);
+            box-shadow: none;
+        }
+
+        .security-log-list {
+            display: grid;
+            gap: .85rem;
+            max-height: 360px;
+            overflow-y: auto;
+            padding-right: .35rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(224,112,32,.55) rgba(255,250,244,.9);
+        }
+
+        .security-log-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .security-log-list::-webkit-scrollbar-track {
+            border-radius: 999px;
+            background: rgba(255,250,244,.9);
+        }
+
+        .security-log-list::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: linear-gradient(180deg, #e07020, #f5a04f);
+        }
+
+        .security-log-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: .85rem;
+            align-items: center;
+            padding: .9rem 1rem;
+            border-radius: 16px;
+            background: #fffaf4;
+            border: 1px solid #ead8c2;
+        }
+
+        .security-log-icon {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            color: #fff;
+            background: linear-gradient(135deg, #e07020, #f5a04f);
+        }
+
+        .security-log-title {
+            color: #2f2925;
+            font-weight: 900;
+        }
+
+        .security-log-details,
+        .security-log-date {
+            color: #7b6654;
+            font-size: .86rem;
+            font-weight: 650;
+        }
+
+        .face-status-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .75rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .face-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            padding: .55rem .8rem;
+            border-radius: 999px;
+            font-weight: 900;
+            background: #fff7ed;
+            color: #7b3d12;
+            border: 1px solid #ead8c2;
+        }
+
+        .face-status-pill.enabled {
+            background: #ecfdf3;
+            color: #257a4b;
+            border-color: rgba(37,122,75,.2);
+        }
+
+        .btn-face-disable {
+            border: 1px solid rgba(186,75,68,.22);
+            border-radius: 14px;
+            padding: .75rem 1rem;
+            color: #ba4b44;
+            background: #fff5f4;
+            font-weight: 900;
+        }
+
+        .face-scan-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background:
+                radial-gradient(circle at top left, rgba(240,138,59,.24), transparent 28%),
+                rgba(35, 28, 22, .72);
+            backdrop-filter: blur(16px);
+        }
+
+        .face-scan-modal.is-open {
+            display: flex;
+        }
+
+        .face-scan-card {
+            width: min(440px, 100%);
+            border-radius: 34px;
+            padding: 1.45rem;
+            color: #fff;
+            background:
+                radial-gradient(circle at 20% 0%, rgba(255, 209, 150, .24), transparent 34%),
+                radial-gradient(circle at 88% 18%, rgba(224,112,32,.22), transparent 32%),
+                linear-gradient(150deg, rgba(45,33,25,.96), rgba(17,18,22,.98));
+            border: 1px solid rgba(255,236,211,.18);
+            box-shadow: 0 30px 80px rgba(52, 34, 22, .45);
+            text-align: center;
+        }
+
+        .face-scan-frame {
+            position: relative;
+            width: min(310px, 82vw);
+            height: min(310px, 82vw);
+            margin: 1rem auto;
+            border-radius: 42%;
+            overflow: hidden;
+            background: #100d0a;
+            box-shadow:
+                inset 0 0 0 2px rgba(255,236,211,.14),
+                0 20px 48px rgba(0,0,0,.38),
+                0 0 0 10px rgba(255,255,255,.035);
+        }
+
+        .face-scan-frame video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        .face-scan-frame canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            pointer-events: none;
+            opacity: .92;
+            mix-blend-mode: screen;
+        }
+
+        .face-ring {
+            position: absolute;
+            inset: 14px;
+            border-radius: 42%;
+            border: 2px solid rgba(255,236,211,.28);
+            box-shadow:
+                0 0 30px rgba(240,138,59,.2),
+                inset 0 0 32px rgba(255,255,255,.06);
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .face-ring::after {
+            content: "";
+            position: absolute;
+            inset: -5px;
+            border-radius: inherit;
+            border: 3px solid transparent;
+            border-top-color: #f5a04f;
+            border-right-color: rgba(255,236,211,.75);
+            filter: drop-shadow(0 0 16px rgba(245,160,79,.55));
+            animation: faceScanSpin 1.8s cubic-bezier(.45,.05,.2,.95) infinite;
+        }
+
+        .face-scan-line {
+            position: absolute;
+            left: 12%;
+            right: 12%;
+            top: 20%;
+            height: 3px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, transparent, #ffe0b3, #f08a3b, transparent);
+            box-shadow: 0 0 18px rgba(240,138,59,.78);
+            animation: faceScanLine 2.2s cubic-bezier(.42,0,.18,1) infinite;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .face-scan-card h3 {
+            margin: .4rem 0;
+            font-weight: 900;
+        }
+
+        .face-scan-card p {
+            color: rgba(255,242,225,.78);
+            margin: 0;
+        }
+
+        .face-scan-actions {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .face-scan-cancel {
+            border: 1px solid rgba(255,236,211,.2);
+            border-radius: 999px;
+            padding: .65rem 1rem;
+            color: #fff;
+            background: rgba(255,236,211,.1);
+            font-weight: 800;
+        }
+
+        @keyframes faceScanSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes faceScanLine {
+            0%, 100% { transform: translateY(0); opacity: .25; }
+            50% { transform: translateY(180px); opacity: 1; }
+        }
+
+        .profile-section-anchor {
+            scroll-margin-top: 110px;
+        }
+
         .completion-pill {
             background: rgba(224,112,32,.1);
             border: 1px solid rgba(224,112,32,.18);
+        }
+
+        @media (max-width: 992px) {
+            .profile-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .security-status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-side-nav {
+                position: static;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                overflow-x: auto;
+            }
+
+            .profile-side-nav-title {
+                margin: 0;
+                white-space: nowrap;
+            }
+
+            .profile-side-link {
+                white-space: nowrap;
+            }
         }
     </style>
 </head>
@@ -928,6 +1432,24 @@ $completionPercentage = $isFreelancer ? (int) round(($completedFreelancerFields 
             </div>
         <?php endif; ?>
 
+        <div class="profile-layout">
+            <aside class="profile-side-nav" aria-label="Profile sections">
+                <div class="profile-side-nav-title">Profile menu</div>
+                <a class="profile-side-link active" href="#profile-info-section">
+                    <i class="fas fa-user-pen"></i>
+                    <span>Update Profile Information</span>
+                </a>
+                <a class="profile-side-link" href="#security-section">
+                    <i class="fas fa-shield-halved"></i>
+                    <span>Security Log</span>
+                </a>
+                <a class="profile-side-link" href="#password-section">
+                    <i class="fas fa-lock"></i>
+                    <span>Change Password</span>
+                </a>
+            </aside>
+
+            <div class="profile-content">
         <div class="profile-info-card">
             <div class="profile-info">
                 <div class="profile-avatar">
@@ -966,7 +1488,7 @@ $completionPercentage = $isFreelancer ? (int) round(($completedFreelancerFields 
             </div>
         <?php endif; ?>
 
-        <div class="form-card">
+        <div class="form-card profile-section-anchor" id="profile-info-section">
             <div class="form-card-header">
                 <i class="fas fa-user"></i>
                 <h3>Update Profile Information</h3>
@@ -1099,12 +1621,111 @@ $completionPercentage = $isFreelancer ? (int) round(($completedFreelancerFields 
             </div>
         </div>
 
-        <div class="form-card">
+        <div class="form-card profile-section-anchor" id="security-section">
+            <div class="form-card-header">
+                <i class="fas fa-shield-halved"></i>
+                <h3>Login Security</h3>
+            </div>
+            <div class="form-card-body">
+                <div class="security-status-grid">
+                    <div class="security-status-card">
+                        <div class="security-status-label">Email</div>
+                        <div class="security-status-value"><?= ((int)($securityState['email_verified'] ?? 1) === 1) ? 'Verified' : 'Not verified' ?></div>
+                    </div>
+                    <div class="security-status-card">
+                        <div class="security-status-label">2FA Email Code</div>
+                        <div class="security-status-value <?= $twoFactorEnabled ? 'enabled' : 'disabled' ?>">
+                            <?= $twoFactorEnabled ? 'Enabled' : 'Disabled' ?>
+                        </div>
+                        <?php if (!empty($securityState['two_factor_setup_at'])): ?>
+                            <div class="security-log-details">Enabled: <?= htmlspecialchars(date('M d, Y H:i', strtotime($securityState['two_factor_setup_at']))) ?></div>
+                        <?php else: ?>
+                            <div class="security-log-details">Enable it here to require an email code on login.</div>
+                        <?php endif; ?>
+                        <div class="security-status-actions">
+                            <?php if ($twoFactorEnabled): ?>
+                                <form class="security-toggle-form" method="POST" action="?action=profile">
+                                    <input type="hidden" name="action" value="two_factor_disable">
+                                    <button type="submit" class="btn-security-toggle is-danger" onclick="return confirm('Disable email 2FA for this account?')">
+                                        <i class="fas fa-toggle-off"></i>Disable 2FA
+                                    </button>
+                                </form>
+                            <?php else: ?>
+                                <form class="security-toggle-form" method="POST" action="?action=profile">
+                                    <input type="hidden" name="action" value="two_factor_enable">
+                                    <button type="submit" class="btn-security-toggle">
+                                        <i class="fas fa-toggle-on"></i>Enable 2FA
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="security-status-card">
+                        <div class="security-status-label">Last Login</div>
+                        <div class="security-status-value">
+                            <?= !empty($securityState['last_login_at']) ? htmlspecialchars(date('M d, Y H:i', strtotime($securityState['last_login_at']))) : 'No login yet' ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="security-log-list">
+                    <?php if (empty($securityLogs)): ?>
+                        <div class="security-log-item">
+                            <div class="security-log-icon"><i class="fas fa-clock"></i></div>
+                            <div>
+                                <div class="security-log-title">No security activity yet</div>
+                                <div class="security-log-details">Login and verification events will appear here.</div>
+                            </div>
+                            <div class="security-log-date">Now</div>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($securityLogs as $log): ?>
+                            <div class="security-log-item">
+                                <div class="security-log-icon"><i class="fas fa-shield"></i></div>
+                                <div>
+                                    <div class="security-log-title"><?= htmlspecialchars(ucwords(str_replace('_', ' ', $log['event_type'] ?? 'security event'))) ?></div>
+                                    <div class="security-log-details"><?= htmlspecialchars($log['details'] ?? $log['status'] ?? '') ?></div>
+                                </div>
+                                <div class="security-log-date"><?= htmlspecialchars(date('M d H:i', strtotime($log['created_at'] ?? 'now'))) ?></div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-card profile-section-anchor" id="password-section">
             <div class="form-card-header">
                 <i class="fas fa-lock"></i>
                 <h3>Change Password</h3>
             </div>
             <div class="form-card-body">
+                <div class="face-verify-panel">
+                    <h4><i class="fas fa-face-smile"></i> Webcam Face Verification</h4>
+                    <p>Free browser-based face verification for normal PC cameras. The setup shows a guided scan and stores a numeric face descriptor, not a photo.</p>
+                    <div class="face-status-row">
+                        <span class="face-status-pill <?= $faceVerificationEnabled ? 'enabled' : '' ?>">
+                            <i class="fas <?= $faceVerificationEnabled ? 'fa-check-circle' : 'fa-circle-xmark' ?>"></i>
+                            <?= $faceVerificationEnabled ? 'Enabled' : 'Not enabled' ?>
+                        </span>
+                        <?php if ($faceVerificationSetupAt): ?>
+                            <span class="face-status">Setup: <?= htmlspecialchars(date('M d, Y H:i', strtotime($faceVerificationSetupAt))) ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <button type="button" class="btn-face-verify" id="startFaceSetupBtn">
+                        <i class="fas fa-camera me-2"></i><?= $faceVerificationEnabled ? 'Redo Face Scan' : 'Setup Face Verification' ?>
+                    </button>
+                    <?php if ($faceVerificationEnabled): ?>
+                        <form method="POST" action="?action=profile" style="display:inline-block; margin-left:.65rem;">
+                            <input type="hidden" name="action" value="face_disable">
+                            <button type="submit" class="btn-face-disable" onclick="return confirm('Disable Face Verification for this account?')">
+                                <i class="fas fa-ban me-2"></i>Disable
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                    <div class="face-status" id="faceSetupStatus">Use this as an extra demo layer for quick webcam login.</div>
+                </div>
+
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="change_password">
 
@@ -1133,13 +1754,335 @@ $completionPercentage = $isFreelancer ? (int) round(($completedFreelancerFields 
                 </form>
             </div>
         </div>
+            </div>
+        </div>
     </main>
+
+    <div class="face-scan-modal" id="faceScanModal" aria-hidden="true">
+        <div class="face-scan-card">
+            <h3 id="faceScanTitle">Face Verification</h3>
+            <p id="faceScanMessage">Preparing camera...</p>
+            <div class="face-scan-frame">
+                <video id="faceSetupVideo" autoplay muted playsinline></video>
+                <canvas id="faceSetupCanvas"></canvas>
+                <div class="face-ring"></div>
+                <div class="face-scan-line"></div>
+            </div>
+            <div class="face-scan-actions">
+                <button type="button" class="face-scan-cancel" id="cancelFaceSetupBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <footer>
         <p>&copy; 2026 SkillBridge. All rights reserved.</p>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script>
+        document.querySelectorAll('.profile-side-link').forEach(function(link) {
+            link.addEventListener('click', function() {
+                document.querySelectorAll('.profile-side-link').forEach(function(item) {
+                    item.classList.remove('active');
+                });
+                this.classList.add('active');
+            });
+        });
+
+        const faceModelUrl = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
+        let faceModelsLoaded = false;
+        let faceSetupStream = null;
+        let faceEyeTrackingActive = false;
+        let faceEyeFrame = null;
+
+        function wait(ms) {
+            return new Promise(function(resolve) {
+                setTimeout(resolve, ms);
+            });
+        }
+
+        async function loadFaceModels() {
+            if (faceModelsLoaded) return;
+            if (!window.faceapi) {
+                await wait(600);
+            }
+            if (!window.faceapi) {
+                throw new Error('Face recognition library could not be loaded.');
+            }
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri(faceModelUrl),
+                faceapi.nets.faceLandmark68Net.loadFromUri(faceModelUrl),
+                faceapi.nets.faceRecognitionNet.loadFromUri(faceModelUrl)
+            ]);
+            faceModelsLoaded = true;
+        }
+
+        function setFaceStatus(message, type) {
+            const status = document.getElementById('faceSetupStatus');
+            if (!status) return;
+            status.textContent = message;
+            status.className = 'face-status' + (type ? ' ' + type : '');
+        }
+
+        function setFaceScanStep(title, message) {
+            document.getElementById('faceScanTitle').textContent = title;
+            document.getElementById('faceScanMessage').textContent = message;
+        }
+
+        function closeFaceSetupModal() {
+            stopFaceEyeTracking(document.getElementById('faceSetupCanvas'));
+            document.getElementById('faceScanModal').classList.remove('is-open');
+            document.getElementById('faceScanModal').setAttribute('aria-hidden', 'true');
+            if (faceSetupStream) {
+                faceSetupStream.getTracks().forEach(function(track) { track.stop(); });
+                faceSetupStream = null;
+            }
+        }
+
+        function clearFaceCanvas(canvas) {
+            if (!canvas) return;
+            const context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawEyeGuide(context, points, color) {
+            if (!points || !points.length) return;
+            const center = points.reduce(function(total, point) {
+                return { x: total.x + point.x, y: total.y + point.y };
+            }, { x: 0, y: 0 });
+            center.x /= points.length;
+            center.y /= points.length;
+
+            context.beginPath();
+            points.forEach(function(point, index) {
+                if (index === 0) {
+                    context.moveTo(point.x, point.y);
+                } else {
+                    context.lineTo(point.x, point.y);
+                }
+            });
+            context.closePath();
+            context.strokeStyle = color;
+            context.lineWidth = 2;
+            context.shadowColor = color;
+            context.shadowBlur = 18;
+            context.stroke();
+
+            context.beginPath();
+            context.arc(center.x, center.y, 5, 0, Math.PI * 2);
+            context.fillStyle = '#fff1d8';
+            context.shadowColor = '#f08a3b';
+            context.shadowBlur = 20;
+            context.fill();
+        }
+
+        async function runFaceEyeTracker(video, canvas) {
+            if (!faceEyeTrackingActive || !canvas) return;
+
+            const width = video.videoWidth || canvas.clientWidth || 320;
+            const height = video.videoHeight || canvas.clientHeight || 320;
+            if (canvas.width !== width || canvas.height !== height) {
+                canvas.width = width;
+                canvas.height = height;
+            }
+
+            const context = canvas.getContext('2d');
+            context.clearRect(0, 0, width, height);
+
+            try {
+                const detection = await faceapi
+                    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.45 }))
+                    .withFaceLandmarks();
+
+                if (!faceEyeTrackingActive) return;
+                if (detection) {
+                    const box = detection.detection.box;
+                    const landmarks = detection.landmarks;
+                    const leftEye = landmarks.getLeftEye();
+                    const rightEye = landmarks.getRightEye();
+
+                    context.save();
+                    context.strokeStyle = 'rgba(255, 224, 179, .34)';
+                    context.lineWidth = 2;
+                    context.shadowColor = 'rgba(240, 138, 59, .65)';
+                    context.shadowBlur = 24;
+                    context.beginPath();
+                    context.ellipse(
+                        box.x + box.width / 2,
+                        box.y + box.height / 2,
+                        box.width * .52,
+                        box.height * .62,
+                        0,
+                        0,
+                        Math.PI * 2
+                    );
+                    context.stroke();
+
+                    drawEyeGuide(context, leftEye, 'rgba(255, 224, 179, .9)');
+                    drawEyeGuide(context, rightEye, 'rgba(240, 138, 59, .95)');
+
+                    context.beginPath();
+                    context.moveTo(leftEye[3].x, leftEye[3].y);
+                    context.lineTo(rightEye[0].x, rightEye[0].y);
+                    context.strokeStyle = 'rgba(255, 255, 255, .32)';
+                    context.lineWidth = 1.5;
+                    context.stroke();
+                    context.restore();
+                }
+            } catch (error) {
+                context.clearRect(0, 0, width, height);
+            }
+
+            faceEyeFrame = requestAnimationFrame(function() {
+                runFaceEyeTracker(video, canvas);
+            });
+        }
+
+        function startFaceEyeTracking(video, canvas) {
+            if (!canvas) return;
+            faceEyeTrackingActive = true;
+            runFaceEyeTracker(video, canvas);
+        }
+
+        function stopFaceEyeTracking(canvas) {
+            faceEyeTrackingActive = false;
+            if (faceEyeFrame) {
+                cancelAnimationFrame(faceEyeFrame);
+                faceEyeFrame = null;
+            }
+            clearFaceCanvas(canvas);
+        }
+
+        async function captureFaceDescriptor(video) {
+            const detection = await faceapi
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.55 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+
+            if (!detection) {
+                throw new Error('No clear face detected. Try better light and center your face.');
+            }
+
+            return Array.from(detection.descriptor);
+        }
+
+        async function detectFacePose(video) {
+            const detection = await faceapi
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+                .withFaceLandmarks();
+
+            if (!detection) {
+                return null;
+            }
+
+            const box = detection.detection.box;
+            const nose = detection.landmarks.getNose();
+            const leftEye = detection.landmarks.getLeftEye();
+            const rightEye = detection.landmarks.getRightEye();
+            const noseTip = nose[3] || nose[Math.floor(nose.length / 2)];
+            const eyeCenterX = leftEye.concat(rightEye).reduce(function(total, point) {
+                return total + point.x;
+            }, 0) / (leftEye.length + rightEye.length);
+            const noseOffset = (noseTip.x - eyeCenterX) / Math.max(box.width, 1);
+
+            return {
+                noseOffset: noseOffset,
+                confidence: detection.detection.score
+            };
+        }
+
+        async function waitForFaceTurn(video, direction, timeoutMs) {
+            const startedAt = Date.now();
+            const neededOffset = direction === 'left' ? 0.055 : -0.055;
+            let stableHits = 0;
+
+            while (Date.now() - startedAt < timeoutMs) {
+                const pose = await detectFacePose(video);
+                const movedEnough = pose && (
+                    direction === 'left'
+                        ? pose.noseOffset > neededOffset
+                        : pose.noseOffset < neededOffset
+                );
+
+                if (movedEnough) {
+                    stableHits++;
+                    if (stableHits >= 2) {
+                        return true;
+                    }
+                } else {
+                    stableHits = 0;
+                }
+
+                await wait(180);
+            }
+
+            throw new Error(direction === 'left'
+                ? 'I could not detect the left turn. Move your face a little slower and try again.'
+                : 'I could not detect the right turn. Move your face a little slower and try again.');
+        }
+
+        const startFaceSetupBtn = document.getElementById('startFaceSetupBtn');
+        const cancelFaceSetupBtn = document.getElementById('cancelFaceSetupBtn');
+        if (cancelFaceSetupBtn) {
+            cancelFaceSetupBtn.addEventListener('click', closeFaceSetupModal);
+        }
+
+        if (startFaceSetupBtn) {
+            startFaceSetupBtn.addEventListener('click', async function() {
+                const modal = document.getElementById('faceScanModal');
+                const video = document.getElementById('faceSetupVideo');
+                const canvas = document.getElementById('faceSetupCanvas');
+
+                try {
+                    startFaceSetupBtn.disabled = true;
+                    setFaceStatus('Loading face verification models...', '');
+                    modal.classList.add('is-open');
+                    modal.setAttribute('aria-hidden', 'false');
+                    setFaceScanStep('Preparing Scan', 'Loading local face recognition models...');
+
+                    await loadFaceModels();
+                    faceSetupStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+                    video.srcObject = faceSetupStream;
+                    await video.play();
+
+                    setFaceScanStep('Hold Still', 'Center your face. Capturing secure face descriptor...');
+                    await wait(1200);
+                    const descriptor = await captureFaceDescriptor(video);
+
+                    startFaceEyeTracking(video, canvas);
+                    setFaceScanStep('Move Your Face', 'Slowly turn left. The scan is following your eyes.');
+                    await waitForFaceTurn(video, 'left', 5500);
+                    setFaceScanStep('Move Your Face', 'Now turn right. Keep your eyes inside the glowing guide.');
+                    await waitForFaceTurn(video, 'right', 5500);
+                    setFaceScanStep('Almost Done', 'Look back at the camera for the final lock.');
+                    await wait(900);
+                    stopFaceEyeTracking(canvas);
+
+                    const formData = new FormData();
+                    formData.append('action', 'face_register');
+                    formData.append('descriptor', JSON.stringify(descriptor));
+                    const response = await fetch('?action=profile', { method: 'POST', body: formData });
+                    const data = await response.json();
+                    if (!data.success) {
+                        throw new Error(data.message || 'Could not save face verification.');
+                    }
+
+                    setFaceScanStep('Face Verified', 'Your webcam face verification is ready.');
+                    setFaceStatus(data.message, 'success');
+                    await wait(900);
+                    closeFaceSetupModal();
+                } catch (error) {
+                    setFaceStatus(error.message || 'Face verification setup failed.', 'error');
+                    setFaceScanStep('Scan Failed', error.message || 'Please try again.');
+                    await wait(1200);
+                    closeFaceSetupModal();
+                } finally {
+                    startFaceSetupBtn.disabled = false;
+                }
+            });
+        }
+    </script>
     <?php if ($isFreelancer): ?>
     <script>
         const aiPanel = document.getElementById('aiProfilePanel');

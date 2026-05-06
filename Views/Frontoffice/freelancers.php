@@ -263,6 +263,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             border-color: rgba(224, 112, 32, 0.4);
         }
 
+        .freelancer-card.ai-top-match {
+            border-color: rgba(224,112,32,.72);
+            box-shadow:
+                0 22px 46px rgba(224,112,32,.18),
+                0 0 0 4px rgba(224,112,32,.08);
+        }
+
+        .match-rank-badge {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .45rem .75rem;
+            border-radius: 999px;
+            color: #fff;
+            background: linear-gradient(135deg, #1f1f23, #e07020);
+            font-size: .78rem;
+            font-weight: 950;
+            box-shadow: 0 12px 24px rgba(0,0,0,.18);
+        }
+
         .freelancer-card.is-active {
             border-color: var(--primary);
             box-shadow: 0 18px 34px rgba(224, 112, 32, 0.16);
@@ -880,6 +904,503 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             justify-content: flex-end;
         }
 
+        .ai-match-section {
+            position: relative;
+            overflow: hidden;
+            margin: -0.6rem 0 2.35rem;
+            padding: 1rem 1.15rem;
+            border-radius: 26px;
+            border: 1px solid rgba(224,112,32,.2);
+            background:
+                radial-gradient(circle at 8% 12%, rgba(245,160,79,.2), transparent 26%),
+                radial-gradient(circle at 100% 0%, rgba(30,30,32,.12), transparent 28%),
+                linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,246,235,.9));
+            box-shadow: 0 18px 38px rgba(30,30,32,.08);
+            transition: padding .3s ease, box-shadow .3s ease, border-color .3s ease;
+            cursor: pointer;
+        }
+
+        .ai-match-section.is-open {
+            padding: 1.45rem;
+            border-color: rgba(224,112,32,.34);
+            box-shadow: 0 24px 52px rgba(224,112,32,.12);
+            cursor: default;
+        }
+
+        .ai-match-section::after {
+            content: "";
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            right: -70px;
+            bottom: -90px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(224,112,32,.22), transparent 68%);
+            pointer-events: none;
+        }
+
+        .ai-match-header {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.2rem;
+            margin-bottom: 0;
+        }
+
+        .ai-match-section.is-open .ai-match-header {
+            margin-bottom: 1.15rem;
+        }
+
+        .ai-match-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            margin-bottom: .55rem;
+            padding: .35rem .72rem;
+            border-radius: 999px;
+            color: #8a3b0f;
+            background: #fff1e5;
+            border: 1px solid rgba(224,112,32,.18);
+            font-size: .78rem;
+            font-weight: 900;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .ai-match-header h2 {
+            margin: 0;
+            color: #292321;
+            font-size: 1.35rem;
+            font-weight: 950;
+            letter-spacing: -.02em;
+        }
+
+        .ai-match-header p {
+            max-width: 680px;
+            margin: .4rem 0 0;
+            color: #7a6656;
+            font-weight: 650;
+            line-height: 1.6;
+        }
+
+        .ai-match-expand {
+            position: relative;
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: .55rem;
+            border: none;
+            border-radius: 999px;
+            padding: .72rem 1rem;
+            color: #fff;
+            background: linear-gradient(135deg, #1f1f23, #e07020);
+            font-weight: 900;
+            box-shadow: 0 14px 26px rgba(224,112,32,.22);
+            transition: transform .25s ease, box-shadow .25s ease;
+        }
+
+        .ai-match-expand:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 32px rgba(224,112,32,.3);
+        }
+
+        .ai-match-expand i {
+            transition: transform .25s ease;
+        }
+
+        .ai-match-section.is-open .ai-match-expand i {
+            transform: rotate(180deg);
+        }
+
+        .ai-match-grid {
+            position: relative;
+            display: none;
+            grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(170px, .45fr));
+            gap: .9rem;
+            align-items: stretch;
+        }
+
+        .ai-match-section.is-open .ai-match-grid {
+            display: grid;
+        }
+
+        .ai-match-grid textarea,
+        .ai-match-grid select {
+            min-height: 54px;
+            border: 1px solid #d9c6ad;
+            border-radius: 16px;
+            background: #fffdf9;
+            color: #352a22;
+            padding: .9rem 1rem;
+            font: inherit;
+            font-weight: 650;
+            outline: none;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.72);
+            transition: border-color .25s ease, box-shadow .25s ease;
+        }
+
+        .ai-match-grid textarea {
+            min-height: 112px;
+            resize: vertical;
+            grid-row: span 2;
+        }
+
+        .ai-match-grid textarea:focus,
+        .ai-match-grid select:focus {
+            border-color: #e07020;
+            box-shadow: 0 0 0 4px rgba(224,112,32,.12);
+        }
+
+        .ai-match-actions {
+            display: flex;
+            gap: .75rem;
+            align-items: stretch;
+        }
+
+        .btn-ai-match,
+        .btn-ai-clear {
+            border: none;
+            border-radius: 16px;
+            padding: .92rem 1rem;
+            font-weight: 900;
+            transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
+        }
+
+        .btn-ai-match {
+            flex: 1;
+            color: white;
+            background: linear-gradient(135deg, #1f1f23, #3b2a20 50%, #e07020);
+            box-shadow: 0 16px 30px rgba(224,112,32,.2);
+        }
+
+        .btn-ai-match:hover,
+        .btn-ai-clear:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-ai-clear {
+            color: #8a3b0f;
+            background: #fff1e5;
+            border: 1px solid rgba(224,112,32,.18);
+        }
+
+        .ai-match-results {
+            position: relative;
+            display: none;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(224,112,32,.16);
+        }
+
+        .ai-match-results.is-visible {
+            display: block;
+        }
+
+        .search-ai-hint {
+            position: absolute;
+            z-index: 20;
+            display: none;
+            align-items: flex-start;
+            gap: .65rem;
+            width: min(360px, calc(100vw - 2rem));
+            padding: .85rem .95rem;
+            border-radius: 18px;
+            color: #4f3a2c;
+            background: rgba(255,255,255,.96);
+            border: 1px solid rgba(224,112,32,.22);
+            box-shadow: 0 18px 36px rgba(30,30,32,.14);
+            backdrop-filter: blur(10px);
+        }
+
+        .search-ai-hint.is-visible {
+            display: flex;
+        }
+
+        .search-ai-hint i {
+            color: #e07020;
+            margin-top: .2rem;
+        }
+
+        .search-ai-hint strong {
+            display: block;
+            color: #2b241f;
+            font-weight: 950;
+            margin-bottom: .15rem;
+        }
+
+        .search-ai-hint span {
+            display: block;
+            color: #7a6656;
+            font-size: .9rem;
+            font-weight: 650;
+            line-height: 1.45;
+        }
+
+        .ai-robot-guide {
+            position: absolute;
+            z-index: 22;
+            display: none;
+            align-items: flex-end;
+            gap: .75rem;
+            pointer-events: none;
+            transform-origin: bottom center;
+            animation: robotPop .34s cubic-bezier(.2, 1.15, .35, 1) both;
+        }
+
+        .ai-robot-guide.is-visible {
+            display: flex;
+        }
+
+        .ai-robot-bubble {
+            position: relative;
+            max-width: 210px;
+            padding: .78rem .9rem;
+            border-radius: 18px 18px 18px 6px;
+            color: #3a2b22;
+            background: rgba(255,255,255,.97);
+            border: 1px solid rgba(224,112,32,.22);
+            box-shadow: 0 16px 34px rgba(30,30,32,.14);
+            font-size: .9rem;
+            font-weight: 900;
+            line-height: 1.35;
+        }
+
+        .ai-robot-bubble::after {
+            content: "";
+            position: absolute;
+            right: -7px;
+            bottom: 16px;
+            width: 14px;
+            height: 14px;
+            background: inherit;
+            border-right: 1px solid rgba(224,112,32,.22);
+            border-bottom: 1px solid rgba(224,112,32,.22);
+            transform: rotate(-45deg);
+        }
+
+        .ai-robot-body {
+            position: relative;
+            width: 72px;
+            height: 86px;
+            border-radius: 24px 24px 20px 20px;
+            background:
+                radial-gradient(circle at 28% 26%, rgba(255,255,255,.95), transparent 12%),
+                linear-gradient(145deg, #fffaf4, #ffd8b4);
+            border: 2px solid rgba(224,112,32,.26);
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,.9),
+                0 18px 34px rgba(224,112,32,.18);
+            animation: robotFloat 2.2s ease-in-out infinite;
+        }
+
+        .ai-robot-body::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: -16px;
+            width: 3px;
+            height: 17px;
+            background: #e07020;
+            transform: translateX(-50%);
+            border-radius: 999px;
+        }
+
+        .ai-robot-body::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: -24px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f5a04f;
+            transform: translateX(-50%);
+            box-shadow: 0 0 18px rgba(245,160,79,.85);
+        }
+
+        .ai-robot-face {
+            position: absolute;
+            left: 12px;
+            right: 12px;
+            top: 16px;
+            height: 32px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #1f1f23, #3b2a20);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+        }
+
+        .ai-robot-face::before,
+        .ai-robot-face::after {
+            content: "";
+            position: absolute;
+            top: 11px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ffd8b4;
+            box-shadow: 0 0 12px rgba(245,160,79,.95);
+            animation: robotBlink 4s infinite;
+        }
+
+        .ai-robot-face::before {
+            left: 12px;
+        }
+
+        .ai-robot-face::after {
+            right: 12px;
+        }
+
+        .ai-robot-smile {
+            position: absolute;
+            left: 29px;
+            top: 53px;
+            width: 16px;
+            height: 8px;
+            border-bottom: 3px solid #8a3b0f;
+            border-radius: 0 0 999px 999px;
+        }
+
+        .ai-robot-arm {
+            position: absolute;
+            right: -25px;
+            top: 40px;
+            width: 34px;
+            height: 8px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #ffd8b4, #e07020);
+            transform-origin: left center;
+            transform: rotate(-26deg);
+            animation: robotPoint 1.1s ease-in-out infinite;
+        }
+
+        .ai-robot-arm::after {
+            content: "";
+            position: absolute;
+            right: -6px;
+            top: -4px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #e07020;
+            box-shadow: 0 0 14px rgba(224,112,32,.45);
+        }
+
+        .ai-robot-shadow {
+            position: absolute;
+            left: 12px;
+            right: 12px;
+            bottom: -9px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(104,72,44,.18);
+            filter: blur(3px);
+            animation: robotShadow 2.2s ease-in-out infinite;
+        }
+
+        .ai-robot-guide.is-celebrating .ai-robot-arm {
+            right: -14px;
+            transform: rotate(-72deg);
+            animation: robotWave .55s ease-in-out infinite;
+        }
+
+        @keyframes robotPop {
+            from {
+                opacity: 0;
+                transform: translateY(12px) scale(.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes robotFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-7px); }
+        }
+
+        @keyframes robotShadow {
+            0%, 100% { transform: scaleX(1); opacity: .2; }
+            50% { transform: scaleX(.78); opacity: .12; }
+        }
+
+        @keyframes robotPoint {
+            0%, 100% { transform: rotate(-26deg) translateX(0); }
+            50% { transform: rotate(-20deg) translateX(4px); }
+        }
+
+        @keyframes robotWave {
+            0%, 100% { transform: rotate(-72deg); }
+            50% { transform: rotate(-38deg); }
+        }
+
+        @keyframes robotBlink {
+            0%, 44%, 48%, 100% { transform: scaleY(1); }
+            46% { transform: scaleY(.15); }
+        }
+
+        .ai-match-results-title {
+            display: flex;
+            align-items: center;
+            gap: .55rem;
+            margin-bottom: .8rem;
+            color: #2b241f;
+            font-weight: 950;
+        }
+
+        .ai-match-list {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: .85rem;
+        }
+
+        .ai-match-result-card {
+            border-radius: 18px;
+            padding: 1rem;
+            background: rgba(255,255,255,.78);
+            border: 1px solid #ead8c2;
+            box-shadow: 0 10px 20px rgba(30,30,32,.06);
+        }
+
+        .ai-match-result-card strong {
+            display: block;
+            color: #2b241f;
+            font-weight: 950;
+            margin-bottom: .35rem;
+        }
+
+        .ai-match-result-card span {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            margin-bottom: .45rem;
+            padding: .28rem .55rem;
+            border-radius: 999px;
+            color: #8a3b0f;
+            background: #fff1e5;
+            font-size: .82rem;
+            font-weight: 900;
+        }
+
+        .ai-match-result-card p {
+            margin: 0;
+            color: #705949;
+            font-size: .9rem;
+            font-weight: 650;
+            line-height: 1.55;
+        }
+
+        .ai-match-empty {
+            display: none;
+            color: #7a6656;
+            font-weight: 750;
+        }
+
+        .ai-match-empty.is-visible {
+            display: block;
+        }
+
         .btn-search,
         .btn-reset {
             min-height: 48px;
@@ -1121,6 +1642,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             .filter-group {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+
+            .ai-match-grid,
+            .ai-match-list {
+                grid-template-columns: 1fr;
+            }
+
+            .ai-match-grid textarea {
+                grid-row: auto;
+            }
         }
 
         @media (max-width: 768px) {
@@ -1135,6 +1665,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
             .filter-group {
                 grid-template-columns: 1fr;
+            }
+
+            .ai-match-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .ai-match-actions {
+                flex-direction: column;
+            }
+
+            .ai-match-expand {
+                justify-content: center;
+                width: 100%;
             }
         }
     </style>
@@ -1160,7 +1704,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     </div>
                 </div>
                 <div class="filter-group">
-                    <input type="text" name="search" placeholder="Search by name..." value="<?= htmlspecialchars($search) ?>">
+                    <input type="text" name="search" id="freelancerSearchInput" placeholder="Search by name..." value="<?= htmlspecialchars($search) ?>">
 
                     <select name="niveau">
                         <option value="">-- Experience Level --</option>
@@ -1195,6 +1739,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     </button>
                 </div>
             </form>
+        </div>
+
+        <?php if (!empty($freelancers)): ?>
+            <section class="ai-match-section" id="aiMatchSection" aria-labelledby="aiMatchTitle">
+                <div class="ai-match-header">
+                    <div>
+                        <div class="ai-match-kicker"><i class="fas fa-wand-magic-sparkles"></i> Smart match helper</div>
+                        <h2 id="aiMatchTitle">Let AI suggest the best freelancer</h2>
+                        <p>Describe the project and SkillBridge will rank visible freelancers by skills, experience text, availability, level, rating, and client feedback.</p>
+                    </div>
+                    <button type="button" class="ai-match-expand" id="aiMatchToggle" aria-expanded="false">
+                        Open assistant <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+
+                <div class="ai-match-grid">
+                    <textarea id="aiProjectBrief" placeholder="Example: I need a responsive React dashboard with API integration, clean UI, charts, and delivery in one week."></textarea>
+                    <select id="aiPreferredLevel">
+                        <option value="">Any level</option>
+                        <option value="expert">Prefer expert</option>
+                        <option value="interm">Prefer intermediate</option>
+                        <option value="beginner">Open to beginner</option>
+                    </select>
+                    <select id="aiUrgency">
+                        <option value="">Normal urgency</option>
+                        <option value="fast">Fast delivery</option>
+                        <option value="quality">Quality first</option>
+                        <option value="budget">Budget friendly</option>
+                    </select>
+                    <div class="ai-match-actions">
+                        <button type="button" class="btn-ai-match" id="runAiMatchBtn">
+                            <i class="fas fa-bolt me-2"></i>Find best matches
+                        </button>
+                        <button type="button" class="btn-ai-clear" id="clearAiMatchBtn">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div class="ai-match-results" id="aiMatchResults">
+                    <div class="ai-match-results-title">
+                        <i class="fas fa-ranking-star"></i>
+                        Recommended freelancers
+                    </div>
+                    <div class="ai-match-empty" id="aiMatchEmpty">Add more project details so the assistant can make a confident match.</div>
+                    <div class="ai-match-list" id="aiMatchList"></div>
+                </div>
+            </section>
+        <?php endif; ?>
+
+        <div class="search-ai-hint" id="searchAiHint" role="status">
+            <i class="fas fa-wand-magic-sparkles"></i>
+            <div>
+                <strong>Need a better match?</strong>
+                <span>You can use the AI helper to describe your project and find the best freelancer faster.</span>
+            </div>
+        </div>
+
+        <div class="ai-robot-guide" id="aiRobotGuide" aria-hidden="true">
+            <div class="ai-robot-bubble" id="aiRobotBubble">Let me help you pick</div>
+            <div class="ai-robot-body">
+                <div class="ai-robot-face"></div>
+                <div class="ai-robot-smile"></div>
+                <div class="ai-robot-arm"></div>
+                <div class="ai-robot-shadow"></div>
+            </div>
         </div>
 
         <?php if (empty($freelancers)): ?>
@@ -1380,8 +1990,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         const modalFreelancerFeedback = document.getElementById('modalFreelancerFeedback');
         const modalLikeButton = document.getElementById('modalLikeButton');
         const modalDislikeButton = document.getElementById('modalDislikeButton');
+        const aiProjectBrief = document.getElementById('aiProjectBrief');
+        const aiPreferredLevel = document.getElementById('aiPreferredLevel');
+        const aiUrgency = document.getElementById('aiUrgency');
+        const aiMatchSection = document.getElementById('aiMatchSection');
+        const aiMatchToggle = document.getElementById('aiMatchToggle');
+        const runAiMatchBtn = document.getElementById('runAiMatchBtn');
+        const clearAiMatchBtn = document.getElementById('clearAiMatchBtn');
+        const aiMatchResults = document.getElementById('aiMatchResults');
+        const aiMatchList = document.getElementById('aiMatchList');
+        const aiMatchEmpty = document.getElementById('aiMatchEmpty');
+        const freelancerSearchInput = document.getElementById('freelancerSearchInput');
+        const searchAiHint = document.getElementById('searchAiHint');
+        const aiRobotGuide = document.getElementById('aiRobotGuide');
+        const aiRobotBubble = document.getElementById('aiRobotBubble');
 
         let activeFreelancerCard = null;
+        let originalFreelancerOrder = [];
+        let aiAssistantWasOpened = false;
 
         function formatTextWithBreaks(value) {
             return value.replace(/\n/g, '<br>');
@@ -1433,6 +2059,354 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if (resetFiltersBtn && freelancerFilterForm) {
             resetFiltersBtn.addEventListener('click', function() {
                 freelancerFilterForm.reset();
+                applyFreelancerFilters();
+            });
+        }
+
+        function positionAiRobotNearAssistant() {
+            if (!aiRobotGuide || !aiMatchToggle) {
+                return;
+            }
+
+            const toggleRect = aiMatchToggle.getBoundingClientRect();
+            const robotWidth = aiRobotGuide.offsetWidth || 300;
+            const pageX = window.scrollX || document.documentElement.scrollLeft;
+            const pageY = window.scrollY || document.documentElement.scrollTop;
+            const left = Math.max(16, toggleRect.left + pageX - robotWidth - 18);
+            const top = Math.max(16, toggleRect.top + pageY - 38);
+            aiRobotGuide.style.left = left + 'px';
+            aiRobotGuide.style.top = top + 'px';
+        }
+
+        function showAiRobot(message, celebrating) {
+            if (!aiRobotGuide || !aiRobotBubble) {
+                return;
+            }
+
+            aiRobotBubble.textContent = message;
+            aiRobotGuide.classList.toggle('is-celebrating', Boolean(celebrating));
+            aiRobotGuide.classList.add('is-visible');
+            positionAiRobotNearAssistant();
+        }
+
+        function hideAiRobot(delay) {
+            if (!aiRobotGuide) {
+                return;
+            }
+
+            setTimeout(function() {
+                aiRobotGuide.classList.remove('is-visible', 'is-celebrating');
+            }, delay || 0);
+        }
+
+        function setAiMatchOpen(isOpen) {
+            if (!aiMatchSection || !aiMatchToggle) {
+                return;
+            }
+
+            aiMatchSection.classList.toggle('is-open', isOpen);
+            aiMatchToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            aiMatchToggle.innerHTML = isOpen
+                ? 'Close assistant <i class="fas fa-chevron-down"></i>'
+                : 'Open assistant <i class="fas fa-chevron-down"></i>';
+
+            if (isOpen && aiProjectBrief) {
+                aiAssistantWasOpened = true;
+                showAiRobot('Here we go', true);
+                setTimeout(function() {
+                    aiProjectBrief.focus();
+                }, 160);
+            } else {
+                hideAiRobot(0);
+            }
+        }
+
+        if (aiMatchSection && aiMatchToggle) {
+            aiMatchToggle.addEventListener('click', function(event) {
+                event.stopPropagation();
+                setAiMatchOpen(!aiMatchSection.classList.contains('is-open'));
+            });
+
+            aiMatchSection.addEventListener('click', function(event) {
+                if (!aiMatchSection.classList.contains('is-open') && !event.target.closest('button, input, select, textarea, a')) {
+                    setAiMatchOpen(true);
+                }
+            });
+        }
+
+        function positionSearchAiHint() {
+            if (!freelancerSearchInput || !searchAiHint) {
+                return;
+            }
+
+            const inputRect = freelancerSearchInput.getBoundingClientRect();
+            const pageX = window.scrollX || document.documentElement.scrollLeft;
+            const pageY = window.scrollY || document.documentElement.scrollTop;
+            searchAiHint.style.left = Math.max(16, inputRect.left + pageX) + 'px';
+            searchAiHint.style.top = (inputRect.bottom + pageY + 10) + 'px';
+        }
+
+        if (freelancerSearchInput && searchAiHint) {
+            freelancerSearchInput.addEventListener('focus', function() {
+                positionSearchAiHint();
+                searchAiHint.classList.add('is-visible');
+                showAiRobot('Let me help you pick', false);
+            });
+
+            freelancerSearchInput.addEventListener('blur', function() {
+                setTimeout(function() {
+                    searchAiHint.classList.remove('is-visible');
+                }, 220);
+                if (!aiAssistantWasOpened) {
+                    hideAiRobot(900);
+                }
+            });
+
+            window.addEventListener('resize', positionSearchAiHint);
+            window.addEventListener('resize', positionAiRobotNearAssistant);
+            window.addEventListener('scroll', function() {
+                if (searchAiHint.classList.contains('is-visible')) {
+                    positionSearchAiHint();
+                }
+                if (aiRobotGuide && aiRobotGuide.classList.contains('is-visible')) {
+                    positionAiRobotNearAssistant();
+                }
+            }, { passive: true });
+
+            searchAiHint.addEventListener('mousedown', function(event) {
+                event.preventDefault();
+                setAiMatchOpen(true);
+                searchAiHint.classList.remove('is-visible');
+                if (aiMatchSection) {
+                    aiMatchSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
+
+        function normalizeMatchText(value) {
+            return (value || '')
+                .toString()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase();
+        }
+
+        function tokenizeMatchText(value) {
+            const stopWords = new Set([
+                'the', 'and', 'for', 'with', 'that', 'this', 'from', 'into', 'need', 'needs', 'want', 'wants',
+                'project', 'freelancer', 'service', 'work', 'make', 'build', 'create', 'good', 'best', 'please',
+                'une', 'des', 'les', 'avec', 'pour', 'dans', 'mon', 'ma', 'mes', 'un', 'le', 'la', 'de', 'du',
+                'je', 'veux', 'besoin', 'projet', 'site', 'application'
+            ]);
+
+            return normalizeMatchText(value)
+                .split(/[^a-z0-9+#.]+/i)
+                .filter(function(token) {
+                    return token.length > 2 && !stopWords.has(token);
+                });
+        }
+
+        function getCardMatchText(card) {
+            return [
+                card.dataset.name,
+                card.dataset.niveau,
+                card.dataset.availability,
+                card.dataset.skillSummary,
+                card.dataset.bio,
+                card.dataset.experience
+            ].join(' ');
+        }
+
+        function scoreFreelancerCard(card, projectTokens, preferredLevel, urgency) {
+            const skillText = normalizeMatchText(card.dataset.skillSummary || '');
+            const bioText = normalizeMatchText(card.dataset.bio || '');
+            const experienceText = normalizeMatchText(card.dataset.experience || '');
+            const allText = normalizeMatchText(getCardMatchText(card));
+            const niveauText = normalizeMatchText(card.dataset.niveau || '');
+            const availabilityText = normalizeMatchText(card.dataset.availability || '');
+            const rating = parseFloat(card.dataset.rating || '0');
+            const likes = parseInt(card.dataset.likes || '0', 10);
+            const dislikes = parseInt(card.dataset.dislikes || '0', 10);
+            const matchedTerms = [];
+            let score = 0;
+
+            projectTokens.forEach(function(token) {
+                if (skillText.includes(token)) {
+                    score += 12;
+                    matchedTerms.push(token);
+                } else if (experienceText.includes(token)) {
+                    score += 8;
+                    matchedTerms.push(token);
+                } else if (bioText.includes(token)) {
+                    score += 6;
+                    matchedTerms.push(token);
+                } else if (allText.includes(token)) {
+                    score += 3;
+                    matchedTerms.push(token);
+                }
+            });
+
+            if (preferredLevel === 'expert' && niveauText.includes('expert')) score += 16;
+            if (preferredLevel === 'interm' && (niveauText.includes('inter') || niveauText.includes('avance'))) score += 14;
+            if (preferredLevel === 'beginner' && (niveauText.includes('debut') || niveauText.includes('début'))) score += 10;
+
+            if (urgency === 'fast' && (availabilityText.includes('available') || availabilityText.includes('full'))) score += 14;
+            if (urgency === 'quality') score += Math.min(20, rating * 4);
+            if (urgency === 'budget' && !niveauText.includes('expert')) score += 8;
+
+            score += Math.min(18, rating * 3);
+            score += Math.min(10, likes * 1.5);
+            score -= Math.min(8, dislikes * 1.2);
+
+            const uniqueTerms = Array.from(new Set(matchedTerms)).slice(0, 5);
+            const confidence = Math.max(0, Math.min(98, Math.round(score)));
+            const reasons = [];
+
+            if (uniqueTerms.length > 0) {
+                reasons.push('Matched: ' + uniqueTerms.join(', '));
+            }
+            if (rating >= 4) {
+                reasons.push('strong rating');
+            }
+            if (availabilityText.includes('available') || availabilityText.includes('full')) {
+                reasons.push('good availability');
+            }
+            if (preferredLevel && score > 0) {
+                reasons.push('level fit');
+            }
+
+            return {
+                card: card,
+                score: score,
+                confidence: confidence,
+                reasons: reasons.length ? reasons.join(' • ') : 'Closest available profile based on rating and profile completeness.'
+            };
+        }
+
+        function clearAiMatchHighlights(restoreOrder) {
+            if (freelancersGrid) {
+                freelancersGrid.querySelectorAll('.freelancer-card').forEach(function(card) {
+                    card.classList.remove('ai-top-match');
+                    card.querySelectorAll('.match-rank-badge').forEach(function(badge) {
+                        badge.remove();
+                    });
+                });
+
+                if (restoreOrder) {
+                    originalFreelancerOrder.forEach(function(card) {
+                        freelancersGrid.appendChild(card);
+                    });
+                }
+            }
+
+            if (aiMatchResults) {
+                aiMatchResults.classList.remove('is-visible');
+            }
+            if (aiMatchList) {
+                aiMatchList.innerHTML = '';
+            }
+            if (aiMatchEmpty) {
+                aiMatchEmpty.classList.remove('is-visible');
+            }
+        }
+
+        function runAiMatchAssistant() {
+            if (!freelancersGrid || !aiProjectBrief || !aiMatchResults || !aiMatchList) {
+                return;
+            }
+
+            const projectText = aiProjectBrief.value.trim();
+            const projectTokens = tokenizeMatchText(projectText);
+            const visibleCards = Array.from(freelancersGrid.querySelectorAll('.freelancer-card'))
+                .filter(function(card) {
+                    return card.style.display !== 'none';
+                });
+
+            clearAiMatchHighlights(false);
+            aiMatchResults.classList.add('is-visible');
+
+            if (projectTokens.length < 2 || visibleCards.length === 0) {
+                aiMatchEmpty.classList.add('is-visible');
+                showAiRobot('Tell me a bit more about the project first', false);
+                return;
+            }
+
+            const preferredLevel = aiPreferredLevel ? aiPreferredLevel.value : '';
+            const urgency = aiUrgency ? aiUrgency.value : '';
+            const ranked = visibleCards
+                .map(function(card) {
+                    return scoreFreelancerCard(card, projectTokens, preferredLevel, urgency);
+                })
+                .sort(function(a, b) {
+                    return b.score - a.score;
+                });
+
+            const topMatches = ranked.filter(function(item) {
+                return item.score > 0;
+            }).slice(0, 3);
+
+            if (topMatches.length === 0) {
+                aiMatchEmpty.classList.add('is-visible');
+                showAiRobot('I need a little more detail to find a confident match', false);
+                return;
+            }
+
+            showAiRobot('I found your top 3 matches', true);
+
+            ranked.forEach(function(item) {
+                freelancersGrid.appendChild(item.card);
+            });
+
+            topMatches.forEach(function(match, index) {
+                const badge = document.createElement('div');
+                badge.className = 'match-rank-badge';
+                badge.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> AI Pick #' + (index + 1);
+                match.card.prepend(badge);
+                match.card.classList.add('ai-top-match');
+
+                const resultCard = document.createElement('button');
+                resultCard.type = 'button';
+                resultCard.className = 'ai-match-result-card text-start';
+                const resultName = document.createElement('strong');
+                resultName.textContent = match.card.dataset.name || 'Freelancer';
+                const resultScore = document.createElement('span');
+                const resultIcon = document.createElement('i');
+                resultIcon.className = 'fas fa-gauge-high';
+                resultScore.appendChild(resultIcon);
+                resultScore.appendChild(document.createTextNode(match.confidence + '% match'));
+                const resultReason = document.createElement('p');
+                resultReason.textContent = match.reasons;
+                resultCard.appendChild(resultName);
+                resultCard.appendChild(resultScore);
+                resultCard.appendChild(resultReason);
+                resultCard.addEventListener('click', function() {
+                    match.card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    match.card.classList.add('is-active');
+                    setTimeout(function() {
+                        match.card.classList.remove('is-active');
+                    }, 1200);
+                });
+                aiMatchList.appendChild(resultCard);
+            });
+        }
+
+        if (freelancersGrid) {
+            originalFreelancerOrder = Array.from(freelancersGrid.querySelectorAll('.freelancer-card'));
+        }
+
+        if (runAiMatchBtn) {
+            runAiMatchBtn.addEventListener('click', function() {
+                setAiMatchOpen(true);
+                runAiMatchAssistant();
+            });
+        }
+
+        if (clearAiMatchBtn) {
+            clearAiMatchBtn.addEventListener('click', function() {
+                if (aiProjectBrief) aiProjectBrief.value = '';
+                if (aiPreferredLevel) aiPreferredLevel.value = '';
+                if (aiUrgency) aiUrgency.value = '';
+                clearAiMatchHighlights(true);
                 applyFreelancerFilters();
             });
         }

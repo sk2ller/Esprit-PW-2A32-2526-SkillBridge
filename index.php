@@ -29,6 +29,14 @@ switch ($request) {
         require __DIR__ . '/Views/Frontoffice/login.php';
         break;
 
+    case 'forgot_password':
+        require __DIR__ . '/Views/Frontoffice/forgot_password.php';
+        break;
+
+    case 'verify_email':
+        require __DIR__ . '/Views/Frontoffice/verify_email.php';
+        break;
+
     case 'register':
         require __DIR__ . '/Views/Frontoffice/register.php';
         break;

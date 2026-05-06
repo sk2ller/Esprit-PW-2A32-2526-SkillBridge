@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../Controllers/UserController.php';
+require_once __DIR__ . '/../../Controllers/EmailJsMailer.php';
 require_once __DIR__ . '/../../Models/User.php';
 
 $userController = new UserController();
@@ -56,12 +57,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $isApproved = ($role == 2) ? 1 : 0;
 
         $user = new User($nom, $prenom, $email, $password, $niveau, $role, 0, $isApproved);
-        $userController->addUser($user);
+        $newUserId = $userController->addUser($user);
 
-        if ($role == 3) {
-            $success = 'Sign up successful! Your profile is pending approval. We will get back to you within 24-48 hours.';
+        if ($newUserId) {
+            $verificationCode = $userController->createSecurityCode();
+            $userController->setEmailVerificationCode($newUserId, $verificationCode);
+            $mailResult = EmailJsMailer::sendSecurityCode($email, trim($prenom . ' ' . $nom), $verificationCode, 'verify');
+            $userController->logSecurityEvent($newUserId, $email, 'email_verification_sent', $mailResult['success'] ? 'success' : 'error', $mailResult['success'] ? 'Signup verification code sent' : $mailResult['message']);
+
+            if ($mailResult['success']) {
+                header('Location: ?action=verify_email&email=' . rawurlencode($email) . '&sent=1');
+                exit;
+            }
+
+            $success = 'Account created, but the verification email could not be sent: ' . $mailResult['message'] . ' Configure EmailJS, then use the verification page to resend the code.';
         } else {
-            $success = 'Sign up successful! You can now sign in.';
+            $errors['email'] = 'Could not create your account. Please try again.';
         }
     }
 }
@@ -401,8 +412,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span><?= htmlspecialchars($success) ?></span>
             </div>
             <div class="success-message">
-                <p>You can now sign in with your credentials.</p>
-                <a href="?action=login">Go to Sign In</a>
+                <p>Verify your email before signing in.</p>
+                <a href="?action=verify_email&email=<?= urlencode($email ?? '') ?>">Verify Email</a>
             </div>
             <?php else: ?>
 

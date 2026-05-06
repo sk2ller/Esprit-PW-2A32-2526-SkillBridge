@@ -12,9 +12,20 @@ class UserController
             'rating' => "ALTER TABLE `User` ADD COLUMN `rating` decimal(3,2) DEFAULT 0.00 AFTER `availability`",
             'phone' => "ALTER TABLE `User` ADD COLUMN `phone` varchar(30) DEFAULT NULL AFTER `rating`",
             'bio' => "ALTER TABLE `User` ADD COLUMN `bio` text DEFAULT NULL AFTER `phone`",
-            'profile_picture' => "ALTER TABLE `User` ADD COLUMN `profile_picture` varchar(255) DEFAULT NULL AFTER `bio`",
+            'profile_picture' => "ALTER TABLE `User` ADD COLUMN `profile_picture` varchar(1024) DEFAULT NULL AFTER `bio`",
             'skill_summary' => "ALTER TABLE `User` ADD COLUMN `skill_summary` varchar(255) DEFAULT NULL AFTER `profile_picture`",
             'experience_description' => "ALTER TABLE `User` ADD COLUMN `experience_description` text DEFAULT NULL AFTER `skill_summary`",
+            'face_descriptor' => "ALTER TABLE `User` ADD COLUMN `face_descriptor` text DEFAULT NULL AFTER `experience_description`",
+            'face_verification_enabled' => "ALTER TABLE `User` ADD COLUMN `face_verification_enabled` tinyint(1) DEFAULT 0 AFTER `face_descriptor`",
+            'face_verification_setup_at' => "ALTER TABLE `User` ADD COLUMN `face_verification_setup_at` datetime DEFAULT NULL AFTER `face_verification_enabled`",
+            'email_verified' => "ALTER TABLE `User` ADD COLUMN `email_verified` tinyint(1) DEFAULT 1 AFTER `is_banned`",
+            'email_verification_code' => "ALTER TABLE `User` ADD COLUMN `email_verification_code` varchar(255) DEFAULT NULL AFTER `email_verified`",
+            'email_verification_expires_at' => "ALTER TABLE `User` ADD COLUMN `email_verification_expires_at` datetime DEFAULT NULL AFTER `email_verification_code`",
+            'two_factor_enabled' => "ALTER TABLE `User` ADD COLUMN `two_factor_enabled` tinyint(1) DEFAULT 0 AFTER `email_verification_expires_at`",
+            'two_factor_setup_at' => "ALTER TABLE `User` ADD COLUMN `two_factor_setup_at` datetime DEFAULT NULL AFTER `two_factor_enabled`",
+            'two_factor_code' => "ALTER TABLE `User` ADD COLUMN `two_factor_code` varchar(255) DEFAULT NULL AFTER `two_factor_enabled`",
+            'two_factor_expires_at' => "ALTER TABLE `User` ADD COLUMN `two_factor_expires_at` datetime DEFAULT NULL AFTER `two_factor_code`",
+            'last_login_at' => "ALTER TABLE `User` ADD COLUMN `last_login_at` datetime DEFAULT NULL AFTER `two_factor_expires_at`",
         ];
 
         foreach ($columns as $columnName => $sql) {
@@ -24,6 +35,80 @@ class UserController
                 $db->exec($sql);
             }
         }
+
+        $pictureColumn = $db->prepare("SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'User' AND COLUMN_NAME = 'profile_picture'");
+        $pictureColumn->execute();
+        $pictureLength = (int) $pictureColumn->fetchColumn();
+        if ($pictureLength > 0 && $pictureLength < 1024) {
+            $db->exec("ALTER TABLE `User` MODIFY COLUMN `profile_picture` varchar(1024) DEFAULT NULL");
+        }
+
+        $db->exec("ALTER TABLE `User` MODIFY COLUMN `two_factor_enabled` tinyint(1) DEFAULT 0");
+    }
+
+    private function ensureUserSecurityLogTable()
+    {
+        $db = Config::getConnexion();
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS `user_security_log` (
+                `id_log` int(11) NOT NULL AUTO_INCREMENT,
+                `id_user` int(11) DEFAULT NULL,
+                `email` varchar(255) DEFAULT NULL,
+                `event_type` varchar(80) NOT NULL,
+                `status` varchar(30) NOT NULL DEFAULT 'info',
+                `details` varchar(255) DEFAULT NULL,
+                `ip_address` varchar(64) DEFAULT NULL,
+                `user_agent` varchar(255) DEFAULT NULL,
+                `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id_log`),
+                KEY `idx_security_user` (`id_user`),
+                CONSTRAINT `fk_security_user`
+                    FOREIGN KEY (`id_user`) REFERENCES `User`(`id`) ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+        ");
+    }
+
+    public function saveFaceDescriptor($userId, array $descriptor)
+    {
+        $this->ensureUserProfileColumns();
+        $db = Config::getConnexion();
+        $stmt = $db->prepare("UPDATE User SET face_descriptor = :descriptor, face_verification_enabled = 1, face_verification_setup_at = NOW() WHERE id = :id");
+        return $stmt->execute([
+            'descriptor' => json_encode(array_values($descriptor)),
+            'id' => (int) $userId
+        ]);
+    }
+
+    public function disableFaceVerification($userId)
+    {
+        $this->ensureUserProfileColumns();
+        $db = Config::getConnexion();
+        $stmt = $db->prepare("UPDATE User SET face_descriptor = NULL, face_verification_enabled = 0, face_verification_setup_at = NULL WHERE id = :id");
+        return $stmt->execute(['id' => (int) $userId]);
+    }
+
+    public function getFaceVerificationByEmail($email)
+    {
+        $this->ensureUserProfileColumns();
+        $db = Config::getConnexion();
+        $stmt = $db->prepare("SELECT id, nom, prenom, email, id_role, is_approved, is_banned, email_verified, face_descriptor FROM User WHERE email = :email AND face_verification_enabled = 1 AND face_descriptor IS NOT NULL");
+        $stmt->execute(['email' => $email]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    public function faceDescriptorDistance(array $first, array $second)
+    {
+        if (count($first) !== count($second) || count($first) === 0) {
+            return PHP_FLOAT_MAX;
+        }
+
+        $sum = 0.0;
+        foreach ($first as $index => $value) {
+            $diff = (float)$value - (float)$second[$index];
+            $sum += $diff * $diff;
+        }
+
+        return sqrt($sum);
     }
     // ── CREATE ────────────────────────────────────────────────────────
     public function addUser(User $user)
@@ -186,6 +271,140 @@ class UserController
     }
 
     // ── BADGE ─────────────────────────────────────────────────────────
+    public function createSecurityCode()
+    {
+        return (string) random_int(100000, 999999);
+    }
+
+    public function setEmailVerificationCode($userId, $code, $minutes = 20)
+    {
+        $this->ensureUserProfileColumns();
+        $db = Config::getConnexion();
+        $minutes = max(1, (int) $minutes);
+        $stmt = $db->prepare("UPDATE User SET email_verified = 0, email_verification_code = :code, email_verification_expires_at = DATE_ADD(NOW(), INTERVAL {$minutes} MINUTE) WHERE id = :id");
+        return $stmt->execute([
+            'code' => password_hash($code, PASSWORD_BCRYPT),
+            'id' => (int) $userId
+        ]);
+    }
+
+    public function verifyEmailCode($email, $code)
+    {
+        $this->ensureUserProfileColumns();
+        $db = Config::getConnexion();
+        $stmt = $db->prepare("SELECT id, email_verification_code, email_verification_expires_at, NOW() AS db_now FROM User WHERE email = :email");
+        $stmt->execute(['email' => $email]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row || empty($row['email_verification_code'])) {
+            return null;
+        }
+        if (!empty($row['email_verification_expires_at']) && $row['email_verification_expires_at'] < $row['db_now']) {
+            return null;
+        }
+        if (!password_verify($code, $row['email_verification_code'])) {
+            return null;
+        }
+
+        return (int) $row['id'];
+    }
+
+    public function markEmailVerified($userId)
+    {
+        $this->ensureUserProfileColumns();
+        $db = Config::getConnexion();
+        $stmt = $db->prepare("UPDATE User SET email_verified = 1, email_verification_code = NULL, email_verification_expires_at = NULL WHERE id = :id");
+        return $stmt->execute(['id' => (int) $userId]);
+    }
+
+    public function setTwoFactorCode($userId, $code, $minutes = 10)
+    {
+        $this->ensureUserProfileColumns();
+        $db = Config::getConnexion();
+        $minutes = max(1, (int) $minutes);
+        $stmt = $db->prepare("UPDATE User SET two_factor_code = :code, two_factor_expires_at = DATE_ADD(NOW(), INTERVAL {$minutes} MINUTE) WHERE id = :id");
+        return $stmt->execute([
+            'code' => password_hash($code, PASSWORD_BCRYPT),
+            'id' => (int) $userId
+        ]);
+    }
+
+    public function setTwoFactorEnabled($userId, $enabled)
+    {
+        $this->ensureUserProfileColumns();
+        $db = Config::getConnexion();
+        if ((int) $enabled === 1) {
+            $stmt = $db->prepare("UPDATE User SET two_factor_enabled = 1, two_factor_setup_at = COALESCE(two_factor_setup_at, NOW()) WHERE id = :id");
+        } else {
+            $stmt = $db->prepare("UPDATE User SET two_factor_enabled = 0, two_factor_setup_at = NULL, two_factor_code = NULL, two_factor_expires_at = NULL WHERE id = :id");
+        }
+
+        return $stmt->execute(['id' => (int) $userId]);
+    }
+
+    public function verifyTwoFactorCode($userId, $code)
+    {
+        $this->ensureUserProfileColumns();
+        $db = Config::getConnexion();
+        $stmt = $db->prepare("SELECT two_factor_code, two_factor_expires_at, NOW() AS db_now FROM User WHERE id = :id");
+        $stmt->execute(['id' => (int) $userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row || empty($row['two_factor_code'])) {
+            return false;
+        }
+        if (!empty($row['two_factor_expires_at']) && $row['two_factor_expires_at'] < $row['db_now']) {
+            return false;
+        }
+        if (!password_verify($code, $row['two_factor_code'])) {
+            return false;
+        }
+
+        $clear = $db->prepare("UPDATE User SET two_factor_code = NULL, two_factor_expires_at = NULL WHERE id = :id");
+        $clear->execute(['id' => (int) $userId]);
+        return true;
+    }
+
+    public function getUserSecurityState($userId)
+    {
+        $this->ensureUserProfileColumns();
+        $db = Config::getConnexion();
+        $stmt = $db->prepare("SELECT email_verified, two_factor_enabled, two_factor_setup_at, last_login_at, face_verification_enabled, face_verification_setup_at FROM User WHERE id = :id");
+        $stmt->execute(['id' => (int) $userId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public function recordLoginSuccess($userId)
+    {
+        $this->ensureUserProfileColumns();
+        $db = Config::getConnexion();
+        $stmt = $db->prepare("UPDATE User SET last_login_at = NOW() WHERE id = :id");
+        return $stmt->execute(['id' => (int) $userId]);
+    }
+
+    public function logSecurityEvent($userId, $email, $eventType, $status = 'info', $details = null)
+    {
+        $this->ensureUserSecurityLogTable();
+        $db = Config::getConnexion();
+        $stmt = $db->prepare("INSERT INTO user_security_log (id_user, email, event_type, status, details, ip_address, user_agent) VALUES (:id_user, :email, :event_type, :status, :details, :ip_address, :user_agent)");
+        return $stmt->execute([
+            'id_user' => $userId ? (int) $userId : null,
+            'email' => $email,
+            'event_type' => $eventType,
+            'status' => $status,
+            'details' => $details,
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'local',
+            'user_agent' => substr($_SERVER['HTTP_USER_AGENT'] ?? 'unknown', 0, 255)
+        ]);
+    }
+
+    public function getRecentSecurityLogs($userId, $limit = 8)
+    {
+        $this->ensureUserSecurityLogTable();
+        $db = Config::getConnexion();
+        $stmt = $db->prepare("SELECT event_type, status, details, ip_address, user_agent, created_at FROM user_security_log WHERE id_user = :id ORDER BY created_at DESC LIMIT " . (int) $limit);
+        $stmt->execute(['id' => (int) $userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function updateBadge($id, $status)
     {
         $this->ensureUserProfileColumns();
