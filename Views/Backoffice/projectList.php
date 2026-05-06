@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 if (!isset($_SESSION['user_id']) || (int)$_SESSION['user_role'] !== 1) {
     header('Location: ?action=login');
     exit;
@@ -18,129 +18,123 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json; charset=UTF-8');
-
     $action = $_POST['action'] ?? '';
 
     if ($action === 'add') {
         $validation = $projectController->validateProjectInput($_POST);
-        if (!$validation['is_valid']) {
-            echo json_encode(['success' => false, 'message' => implode(' ', $validation['errors'])]);
-            exit;
-        }
-
+        if (!$validation['is_valid']) { echo json_encode(['success' => false, 'message' => implode(' ', $validation['errors'])]); exit; }
         $d = $validation['data'];
-        // Admin ajoute → publié directement | Client ajoute → en attente de validation
-        $etat      = ($_SESSION['user_role'] == 1) ? 'publie' : 'en_attente_validation';
+        $etat = ($_SESSION['user_role'] == 1) ? 'publie' : 'en_attente_validation';
         $id_client = ($_SESSION['user_role'] != 1) ? $_SESSION['user_id'] : null;
-
         $project = new Project($d['titre'], $d['description'], $d['budget'], $d['date_creation'], $d['statut'], $etat, $id_client);
-
-        if ($projectController->addProject($project)) {
-            $msg = ($etat === 'publie') ? 'Projet ajouté avec succès.' : 'Projet soumis. En attente de validation par l\'admin.';
-            echo json_encode(['success' => true, 'message' => $msg]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Une erreur est survenue lors de l\'ajout.']);
-        }
+        if ($projectController->addProject($project)) { echo json_encode(['success' => true, 'message' => 'Projet ajouté avec succès.']); } else { echo json_encode(['success' => false, 'message' => 'Une erreur est survenue.']); }
         exit;
     }
-
     if ($action === 'edit') {
         $validation = $projectController->validateProjectInput($_POST, true);
-        if (!$validation['is_valid']) {
-            echo json_encode(['success' => false, 'message' => implode(' ', $validation['errors'])]);
-            exit;
-        }
-
+        if (!$validation['is_valid']) { echo json_encode(['success' => false, 'message' => implode(' ', $validation['errors'])]); exit; }
         $d = $validation['data'];
         $project = new Project($d['titre'], $d['description'], $d['budget'], $d['date_creation'], $d['statut']);
         $project->setId($d['id']);
-
-        if ($projectController->updateProject($project)) {
-            echo json_encode(['success' => true, 'message' => 'Projet modifié avec succès.']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Une erreur est survenue lors de la modification.']);
-        }
+        if ($projectController->updateProject($project)) { echo json_encode(['success' => true, 'message' => 'Projet modifié avec succès.']); } else { echo json_encode(['success' => false, 'message' => 'Erreur.']); }
         exit;
     }
-
     if ($action === 'delete') {
         $id = (int)($_POST['id'] ?? 0);
-        if ($id <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Identifiant invalide.']);
-            exit;
-        }
-
-        if ($projectController->deleteProject($id)) {
-            echo json_encode(['success' => true, 'message' => 'Projet supprimé avec succès.']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Suppression impossible pour le moment.']);
-        }
+        if ($projectController->deleteProject($id)) { echo json_encode(['success' => true, 'message' => 'Projet supprimé.']); } else { echo json_encode(['success' => false, 'message' => 'Suppression impossible.']); }
         exit;
     }
-
     if ($action === 'get_project') {
         $id = (int)($_POST['id'] ?? 0);
         $project = $projectController->getProjectById($id);
+        if (!$project) { echo json_encode(['success' => false, 'message' => 'Projet introuvable.']); exit; }
+        echo json_encode(['success' => true, 'id' => $project->getId(), 'titre' => $project->getTitre(), 'description' => $project->getDescription(), 'budget' => $project->getBudget(), 'date_creation' => $project->getDateCreation(), 'statut' => $project->getStatut()]);
+        exit;
+    }
 
-        if (!$project) {
-            echo json_encode(['success' => false, 'message' => 'Projet introuvable.']);
-            exit;
-        }
-
+    if ($action === 'get_project_details') {
+        $id = (int)($_POST['id'] ?? 0);
+        $project = $projectController->getProjectById($id);
+        if (!$project) { echo json_encode(['success' => false, 'message' => 'Projet introuvable.']); exit; }
+        // Récupérer les tâches du projet
+        $tachesProjet = $candidatureController->getTachesProjet($id);
+        $tachesData = array_map(function($t) {
+            return [
+                'id'               => $t['id'],
+                'titre'            => $t['titre'],
+                'description'      => $t['description'] ?? '',
+                'statut'           => $t['statut'],
+                'prix'             => (float)($t['prix'] ?? 0),
+                'payee'            => (bool)($t['payee'] ?? false),
+                'nom_freelancer'   => $t['nom_freelancer'] ?? '',
+                'prenom_freelancer'=> $t['prenom_freelancer'] ?? '',
+                'created_at'       => $t['created_at'] ?? '',
+            ];
+        }, $tachesProjet);
         echo json_encode([
-            'success' => true,
-            'id' => $project->getId(),
-            'titre' => $project->getTitre(),
+            'success'     => true,
+            'id'          => $project->getId(),
+            'titre'       => $project->getTitre(),
             'description' => $project->getDescription(),
-            'budget' => $project->getBudget(),
-            'date_creation' => $project->getDateCreation(),
-            'statut' => $project->getStatut(),
+            'budget'      => (float)$project->getBudget(),
+            'date_creation'=> $project->getDateCreation(),
+            'statut'      => $project->getStatut(),
+            'etat'        => $project->getEtat(),
+            'avancement'  => $project->getAvancement(),
+            'nom_client'  => $project->getNomClient(),
+            'taches'      => $tachesData,
         ]);
         exit;
     }
-
     if ($action === 'accepter' || $action === 'refuser') {
-        $id   = (int)($_POST['id'] ?? 0);
+        $id = (int)($_POST['id'] ?? 0);
         $etat = ($action === 'accepter') ? 'publie' : 'refuse';
-        if ($projectController->changerEtat($id, $etat)) {
-            echo json_encode(['success' => true, 'message' => $action === 'accepter' ? 'Projet publié.' : 'Projet refusé.']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Erreur lors de la mise à jour.']);
-        }
+        if ($projectController->changerEtat($id, $etat)) { echo json_encode(['success' => true, 'message' => $action === 'accepter' ? 'Projet publié.' : 'Projet refusé.']); } else { echo json_encode(['success' => false, 'message' => 'Erreur.']); }
         exit;
     }
-
     if ($action === 'accepter_cand' || $action === 'refuser_cand') {
-        $id     = (int)($_POST['id'] ?? 0);
+        $id = (int)($_POST['id'] ?? 0);
         $statut = ($action === 'accepter_cand') ? 'accepte' : 'refuse';
-        $ok     = $candidatureController->changerStatut($id, $statut);
+        $ok = $candidatureController->changerStatut($id, $statut);
         echo json_encode(['success' => $ok, 'message' => $ok ? ($action === 'accepter_cand' ? 'Candidature acceptée.' : 'Candidature refusée.') : 'Erreur.']);
         exit;
     }
-
     if ($action === 'add_tache_admin') {
         $id_projet = (int)($_POST['id_projet'] ?? 0);
         $id_freelancer = (int)($_POST['id_freelancer'] ?? 0);
-        $titre     = trim($_POST['titre'] ?? '');
-        $desc      = trim($_POST['description'] ?? '');
-        $statut_t  = $_POST['statut'] ?? 'a_faire';
-        $prix      = (float)($_POST['prix'] ?? 0);
-        if (!$titre)        { echo json_encode(['success'=>false,'message'=>'Le titre est obligatoire.']); exit; }
-        if (!$id_projet)    { echo json_encode(['success'=>false,'message'=>'Projet invalide.']); exit; }
-        if (!$id_freelancer){ echo json_encode(['success'=>false,'message'=>'Freelancer invalide.']); exit; }
+        $titre = trim($_POST['titre'] ?? '');
+        $desc = trim($_POST['description'] ?? '');
+        $statut_t = $_POST['statut'] ?? 'a_faire';
+        $prix = (float)($_POST['prix'] ?? 0);
+        if (!$titre) { echo json_encode(['success'=>false,'message'=>'Le titre est obligatoire.']); exit; }
+        if (!$id_projet) { echo json_encode(['success'=>false,'message'=>'Projet invalide.']); exit; }
+        if (!$id_freelancer) { echo json_encode(['success'=>false,'message'=>'Freelancer invalide.']); exit; }
         require_once __DIR__ . '/../../Models/Tache.php';
         $tache = new Tache($id_projet, $id_freelancer, $titre, $desc, $statut_t, $prix);
         echo json_encode($candidatureController->ajouterTacheAdmin($tache));
         exit;
     }
-
     if ($action === 'get_freelancers_projet') {
         $id_projet = (int)($_POST['id_projet'] ?? 0);
         $list = $candidatureController->getFreelancersAcceptes($id_projet);
         echo json_encode(['success' => true, 'freelancers' => $list]);
         exit;
     }
-
+    if ($action === 'edit_tache_admin') {
+        $id = (int)($_POST['id'] ?? 0);
+        $titre = trim($_POST['titre'] ?? '');
+        $desc = trim($_POST['description'] ?? '');
+        $stat = $_POST['statut'] ?? 'a_faire';
+        $prix = (float)($_POST['prix'] ?? 0);
+        if (!$titre) { echo json_encode(['success'=>false,'message'=>'Le titre est obligatoire.']); exit; }
+        echo json_encode($candidatureController->modifierTacheAdmin($id, $titre, $desc, $stat, $prix));
+        exit;
+    }
+    if ($action === 'delete_tache_admin') {
+        $id = (int)($_POST['id'] ?? 0);
+        echo json_encode($candidatureController->supprimerTacheAdmin($id));
+        exit;
+    }
     echo json_encode(['success' => false, 'message' => 'Action non reconnue.']);
     exit;
 }
@@ -157,14 +151,23 @@ $candidatures    = $candidatureController->getAllCandidatures();
 $taches          = $candidatureController->getAllTaches();
 $pendingCands    = $candidatureController->getAllCandidatures('en_attente');
 
-function badgeStatusClass($status)
-{
-    if ($status === 'en_cours') {
-        return 'warning';
-    }
-    if ($status === 'termine') {
-        return 'success';
-    }
+$db = Config::getConnexion();
+$q = $db->query("SELECT COUNT(*) AS total, SUM(CASE WHEN id_role=2 THEN 1 ELSE 0 END) AS clients, SUM(CASE WHEN id_role=3 THEN 1 ELSE 0 END) AS freelancers FROM user WHERE id_role != 1");
+$statsUsers = $q->fetch();
+$q = $db->query("SELECT COUNT(*) AS total, SUM(CASE WHEN statut='termine' THEN 1 ELSE 0 END) AS terminees, SUM(CASE WHEN statut='en_cours' THEN 1 ELSE 0 END) AS en_cours, SUM(CASE WHEN statut='a_faire' THEN 1 ELSE 0 END) AS a_faire, COALESCE(SUM(prix),0) AS total_prix FROM tache");
+$statsTaches = $q->fetch();
+$q = $db->query("SELECT COUNT(*) AS total, SUM(CASE WHEN statut='accepte' THEN 1 ELSE 0 END) AS acceptees, SUM(CASE WHEN statut='en_attente' THEN 1 ELSE 0 END) AS en_attente, SUM(CASE WHEN statut='refuse' THEN 1 ELSE 0 END) AS refusees FROM candidature");
+$statsCands = $q->fetch();
+$q = $db->query("SELECT COUNT(*) AS total_payees, COALESCE(SUM(prix),0) AS montant_paye FROM tache WHERE payee=1");
+$statsPaiements = $q->fetch();
+$q = $db->query("SELECT DATE_FORMAT(date_creation,'%Y-%m') AS mois, COUNT(*) AS nb FROM projet WHERE date_creation >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) GROUP BY mois ORDER BY mois ASC");
+$projetsParMois = $q->fetchAll();
+$moisLabels = array_column($projetsParMois, 'mois');
+$moisData   = array_column($projetsParMois, 'nb');
+
+function badgeStatusClass($status) {
+    if ($status === 'en_cours') return 'warning';
+    if ($status === 'termine') return 'success';
     return 'secondary';
 }
 ?>
@@ -199,48 +202,33 @@ function badgeStatusClass($status)
         }
         .wrapper:not(.sidebar-hidden) .show-sidebar-btn { display: none !important; }
         .toggle-sidebar { cursor: pointer; }
-        .stats-card .card-body { min-height: 100px; }
-        .stats-card h4 { font-size: 1.4rem; }
-        .project-description {
-            max-width: 320px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .stat-label {
-            font-size: 0.85rem;
-            color: #6c757d;
-        }
-        .table td,
-        .table th {
-            vertical-align: middle;
-        }
-        /* Messages d'erreur sous les inputs */
-        .invalid-feedback {
-            display: block;
-            color: #dc3545;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
-        }
-        .is-invalid {
-            border-color: #dc3545 !important;
-        }
-        .is-valid {
-            border-color: #28a745 !important;
-        }
         @media (min-width: 992px) {
             .show-sidebar-btn { display: none; }
             .wrapper.sidebar-hidden .show-sidebar-btn { display: block; }
         }
+        .stats-card { border-radius: 14px; background: #fff; }
+        .project-description {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .invalid-feedback { display: none; }
+        .is-invalid ~ .invalid-feedback,
+        .is-invalid + .invalid-feedback { display: block; }
+        .is-invalid { border-color: #dc3545 !important; }
+        .is-valid { border-color: #198754 !important; }
     </style>
 </head>
 <body>
-<div class="wrapper">
+<div class="wrapper" id="wrapper">
+
+    <!-- Sidebar -->
     <div class="sidebar" data-background-color="dark">
         <div class="sidebar-logo">
             <div class="logo-header" data-background-color="dark">
                 <a href="?action=home" class="logo">
-                    <img src="<?= BASE_URL ?>/Views/assets/img/logo1.png" alt="SkillBridge" style="height: 30px; width: auto;">
+                    <img src="<?= BASE_URL ?>/Views/assets/img/logo1.png" alt="SkillBridge" style="height:30px;width:auto;">
                 </a>
                 <div class="nav-toggle">
                     <button class="btn btn-toggle toggle-sidebar"><i class="gg-menu-right"></i></button>
@@ -275,8 +263,12 @@ function badgeStatusClass($status)
             </div>
         </div>
     </div>
+    <!-- End Sidebar -->
 
+    <!-- Main Panel -->
     <div class="main-panel">
+
+        <!-- Navbar -->
         <nav class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bottom">
             <div class="container-fluid">
                 <div class="navbar-header">
@@ -286,7 +278,7 @@ function badgeStatusClass($status)
                 </div>
                 <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
                     <li class="nav-item">
-                        <span class="nav-link" style="color: #2c3e50;">👤 <?= htmlspecialchars($_SESSION['user_prenom']) ?></span>
+                        <span class="nav-link" style="color:#2c3e50;">👤 <?= htmlspecialchars($_SESSION['user_prenom'] ?? '') ?></span>
                     </li>
                     <li class="nav-item">
                         <a href="?action=logout" class="nav-link" title="Déconnexion">
@@ -297,72 +289,104 @@ function badgeStatusClass($status)
             </div>
         </nav>
 
+        <!-- Show Sidebar Button -->
         <button class="btn btn-outline-secondary show-sidebar-btn" id="showSidebarBtn" title="Afficher la barre latérale">
             <i class="fas fa-bars"></i>
         </button>
 
+        <!-- Page Content -->
         <div class="container">
             <div class="page-inner">
                 <div class="page-header">
                     <h4 class="page-title">Gestion des Projets</h4>
                 </div>
 
-                <div class="row mb-4">
+                <!-- STATS SECTION -->
+                <div class="row g-3 mb-3">
                     <div class="col-sm-6 col-lg-3">
-                        <div class="card stats-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <p class="mb-1">Total projets</p>
-                                        <h4 class="fw-bold mb-0"><?= (int)$stats['total'] ?></h4>
-                                    </div>
-                                    <div class="text-primary"><i class="fas fa-folder-open fa-2x"></i></div>
+                        <div class="card border-0 shadow-sm h-100" style="border-radius:14px;background:#fff;">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <p class="text-uppercase fw-bold mb-0" style="font-size:.7rem;letter-spacing:.07em;color:#6b7280;">Total Projets</p>
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:#ede9fe;"><i class="fas fa-folder-open" style="color:#7c3aed;font-size:.85rem;"></i></div>
                                 </div>
+                                <h2 class="fw-bold mb-0" style="font-size:1.8rem;color:#1e1b4b;"><?= (int)$stats['total'] ?></h2>
+                                <small class="text-muted"><?= (int)$stats['en_attente_validation'] ?> en attente validation</small>
+                                <hr class="my-2" style="border-color:#f0eeff;">
+                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">En cours</span><span class="fw-bold" style="color:#f59e0b;"><?= (int)$stats['en_cours'] ?></span></div>
+                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Terminés</span><span class="fw-bold" style="color:#10b981;"><?= (int)$stats['termine'] ?></span></div>
+                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">En attente</span><span class="fw-bold" style="color:#9ca3af;"><?= (int)$stats['en_attente'] ?></span></div>
                             </div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-lg-3">
-                        <div class="card stats-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <p class="mb-1">En cours</p>
-                                        <h4 class="fw-bold mb-0 text-warning"><?= (int)$stats['en_cours'] ?></h4>
-                                    </div>
-                                    <div class="text-warning"><i class="fas fa-spinner fa-2x"></i></div>
+                        <div class="card border-0 shadow-sm h-100" style="border-radius:14px;background:#fff;">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <p class="text-uppercase fw-bold mb-0" style="font-size:.7rem;letter-spacing:.07em;color:#6b7280;">Utilisateurs</p>
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:#dcfce7;"><i class="fas fa-users" style="color:#10b981;font-size:.85rem;"></i></div>
                                 </div>
+                                <h2 class="fw-bold mb-0" style="font-size:1.8rem;color:#1e1b4b;"><?= (int)$statsUsers['total'] ?></h2>
+                                <small class="text-muted">inscrits</small>
+                                <hr class="my-2" style="border-color:#f0eeff;">
+                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Clients</span><span class="fw-bold" style="color:#7c3aed;"><?= (int)$statsUsers['clients'] ?></span></div>
+                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Freelancers</span><span class="fw-bold" style="color:#f59e0b;"><?= (int)$statsUsers['freelancers'] ?></span></div>
                             </div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-lg-3">
-                        <div class="card stats-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <p class="mb-1">Terminés</p>
-                                        <h4 class="fw-bold mb-0 text-success"><?= (int)$stats['termine'] ?></h4>
-                                    </div>
-                                    <div class="text-success"><i class="fas fa-check-circle fa-2x"></i></div>
+                        <div class="card border-0 shadow-sm h-100" style="border-radius:14px;background:#fff;">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <p class="text-uppercase fw-bold mb-0" style="font-size:.7rem;letter-spacing:.07em;color:#6b7280;">Tâches</p>
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:#fef3c7;"><i class="fas fa-tasks" style="color:#f59e0b;font-size:.85rem;"></i></div>
                                 </div>
+                                <h2 class="fw-bold mb-0" style="font-size:1.8rem;color:#1e1b4b;"><?= (int)$statsTaches['total'] ?></h2>
+                                <small class="text-muted"><?= number_format((float)$statsTaches['total_prix'],2,',',' ') ?> TND alloués</small>
+                                <hr class="my-2" style="border-color:#f0eeff;">
+                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">À faire</span><span class="fw-bold" style="color:#9ca3af;"><?= (int)$statsTaches['a_faire'] ?></span></div>
+                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">En cours</span><span class="fw-bold" style="color:#f59e0b;"><?= (int)$statsTaches['en_cours'] ?></span></div>
+                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Terminées</span><span class="fw-bold" style="color:#10b981;"><?= (int)$statsTaches['terminees'] ?></span></div>
                             </div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-lg-3">
-                        <div class="card stats-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <p class="mb-1">Budget total</p>
-                                        <h4 class="fw-bold mb-0"><?= number_format((float)$stats['budget_total'], 2, ',', ' ') ?> TND</h4>
-                                    </div>
-                                    <div class="text-info"><i class="fas fa-coins fa-2x"></i></div>
+                        <div class="card border-0 shadow-sm h-100" style="border-radius:14px;background:#fff;">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <p class="text-uppercase fw-bold mb-0" style="font-size:.7rem;letter-spacing:.07em;color:#6b7280;">Finances</p>
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:#dbeafe;"><i class="fas fa-coins" style="color:#3b82f6;font-size:.85rem;"></i></div>
                                 </div>
+                                <h2 class="fw-bold mb-0" style="font-size:1.8rem;color:#1e1b4b;"><?= number_format((float)$stats['budget_total'],0,',',' ') ?></h2>
+                                <small class="text-muted">TND budget total</small>
+                                <hr class="my-2" style="border-color:#f0eeff;">
+                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Tâches payées</span><span class="fw-bold" style="color:#10b981;"><?= (int)$statsPaiements['total_payees'] ?></span></div>
+                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Montant payé</span><span class="fw-bold" style="color:#10b981;"><?= number_format((float)$statsPaiements['montant_paye'],2,',',' ') ?> TND</span></div>
+                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Candidatures</span><span class="fw-bold" style="color:#7c3aed;"><?= (int)$statsCands['total'] ?></span></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <?php if (!empty($pendingProjects)): ?>
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-sm" style="border-radius:14px;">
+                            <div class="card-header bg-white border-0 pb-0 pt-3 px-3">
+                                <h6 class="fw-bold mb-0" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#7c3aed;"><i class="fas fa-chart-bar me-2"></i>Projets créés (6 derniers mois)</h6>
+                            </div>
+                            <div class="card-body px-3 pb-3"><canvas id="chartProjets" height="100"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm" style="border-radius:14px;">
+                            <div class="card-header bg-white border-0 pb-0 pt-3 px-3">
+                                <h6 class="fw-bold mb-0" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#10b981;"><i class="fas fa-chart-pie me-2"></i>Candidatures</h6>
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center px-3 pb-3"><canvas id="chartCandidatures" height="180"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+<?php if (!empty($pendingProjects)): ?>
                 <div class="card border-warning mb-4">
                     <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center gap-2">
                         <i class="fas fa-clock text-warning"></i>
@@ -468,7 +492,11 @@ function badgeStatusClass($status)
                                     <?php foreach ($projects as $project): ?>
                                         <tr>
                                             <td><?= $project->getId() ?></td>
-                                            <td><?= htmlspecialchars($project->getTitre()) ?></td>
+                                            <td>
+                                                <a href="#" class="fw-semibold text-decoration-none" style="color:#1e1b4b;" onclick="voirProjet(<?= $project->getId() ?>); return false;">
+                                                    <?= htmlspecialchars($project->getTitre()) ?>
+                                                </a>
+                                            </td>
                                             <td>
                                                 <?php if ($project->getNomClient() && trim($project->getNomClient())): ?>
                                                     <span class="badge bg-light text-dark border">
@@ -521,12 +549,13 @@ function badgeStatusClass($status)
                 </div>
             </div>
         </div>
+        <!-- End Projects Container -->
 
-        <!-- ── CANDIDATURES ─────────────────────────────────────────── -->
+        <!-- CANDIDATURES SECTION -->
         <div class="container mt-2">
             <div class="page-inner">
 
-                <!-- Badge en attente -->
+                <!-- Candidatures en attente -->
                 <?php if (!empty($pendingCands)): ?>
                 <div class="card border-warning mb-4">
                     <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center gap-2">
@@ -622,11 +651,11 @@ function badgeStatusClass($status)
                         <div class="table-responsive">
                             <table class="table table-hover align-middle">
                                 <thead>
-                                    <tr><th>Freelancer</th><th>Projet</th><th>Tâche</th><th>Description</th><th>Statut</th><th>Date</th></tr>
+                                    <tr><th>Freelancer</th><th>Projet</th><th>Tâche</th><th>Description</th><th>Statut</th><th>Prix</th><th>Date</th><th>Actions</th></tr>
                                 </thead>
                                 <tbody>
                                 <?php if (empty($taches)): ?>
-                                    <tr><td colspan="6" class="text-center text-muted">Aucune tâche.</td></tr>
+                                    <tr><td colspan="8" class="text-center text-muted">Aucune tâche.</td></tr>
                                 <?php else: ?>
                                     <?php foreach ($taches as $t):
                                         $tb = ['a_faire'=>'secondary','en_cours'=>'warning','termine'=>'success'];
@@ -637,9 +666,22 @@ function badgeStatusClass($status)
                                         <td><?= htmlspecialchars($t['prenom_freelancer'].' '.$t['nom_freelancer']) ?></td>
                                         <td><?= htmlspecialchars($t['titre_projet']) ?></td>
                                         <td><?= htmlspecialchars($t['titre']) ?></td>
-                                        <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= htmlspecialchars($t['description']??'') ?></td>
+                                        <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= htmlspecialchars($t['description']??'') ?></td>
                                         <td><span class="badge bg-<?= $tb[$ts]??'secondary' ?>"><?= $tl[$ts]??$ts ?></span></td>
+                                        <td><?= !empty($t['prix']) && (float)$t['prix'] > 0 ? number_format((float)$t['prix'],2,',',' ').' TND' : '—' ?></td>
                                         <td><?= date('d/m/Y', strtotime($t['created_at'])) ?></td>
+                                        <td>
+                                            <div class="d-flex gap-1 flex-nowrap">
+                                                <button class="btn btn-warning btn-sm" title="Modifier"
+                                                    onclick="openEditTacheAdmin(<?= $t['id'] ?>, <?= htmlspecialchars(json_encode($t['titre'])) ?>, <?= htmlspecialchars(json_encode($t['description']??'')) ?>, '<?= $t['statut'] ?>', <?= (float)($t['prix']??0) ?>)">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-danger btn-sm" title="Supprimer"
+                                                    onclick="deleteTacheAdmin(<?= $t['id'] ?>)">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
@@ -759,6 +801,52 @@ function badgeStatusClass($status)
     </div>
 </div>
 
+<!-- Modal Modifier Tâche (Admin) -->
+<div class="modal fade" id="editTacheAdminModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Modifier la tâche</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editTacheAdminForm" novalidate>
+                <input type="hidden" id="eta_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titre <span class="text-danger">*</span></label>
+                        <input type="text" id="eta_titre" name="titre" class="form-control" placeholder="Titre de la tâche">
+                        <div class="invalid-feedback" id="err_eta_titre"></div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Statut</label>
+                            <select id="eta_statut" name="statut" class="form-select">
+                                <option value="a_faire">À faire</option>
+                                <option value="en_cours">En cours</option>
+                                <option value="termine">Terminé</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Prix (TND) <span class="text-danger">*</span></label>
+                            <input type="number" id="eta_prix" name="prix" class="form-control" min="0" step="0.01" placeholder="0.00">
+                            <div class="invalid-feedback" id="err_eta_prix"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea id="eta_description" name="description" class="form-control" rows="3" placeholder="Description de la tâche"></textarea>
+                        <div class="invalid-feedback" id="err_eta_description"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Ajouter Tâche (Admin) -->
 <div class="modal fade" id="addTacheAdminModal" tabindex="-1">
     <div class="modal-dialog">
@@ -812,6 +900,60 @@ function badgeStatusClass($status)
     </div>
 </div>
 
+<!-- Modal Détails Projet -->
+<div class="modal fade" id="projetDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#1e1b4b,#3730a3);color:#fff;">
+                <div>
+                    <h5 class="modal-title mb-0" id="pd_titre">—</h5>
+                    <small id="pd_client" class="opacity-75"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- Infos générales -->
+                <div class="p-4 border-bottom" style="background:#f8f9ff;">
+                    <div class="row g-3">
+                        <div class="col-sm-3 text-center">
+                            <div class="small text-muted text-uppercase fw-bold mb-1">Budget</div>
+                            <div class="fw-bold fs-5" style="color:#7c3aed;" id="pd_budget">—</div>
+                        </div>
+                        <div class="col-sm-3 text-center">
+                            <div class="small text-muted text-uppercase fw-bold mb-1">Statut</div>
+                            <div id="pd_statut">—</div>
+                        </div>
+                        <div class="col-sm-3 text-center">
+                            <div class="small text-muted text-uppercase fw-bold mb-1">État</div>
+                            <div id="pd_etat">—</div>
+                        </div>
+                        <div class="col-sm-3 text-center">
+                            <div class="small text-muted text-uppercase fw-bold mb-1">Avancement</div>
+                            <div class="fw-bold fs-5" style="color:#f59e0b;" id="pd_avancement">—</div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="small text-muted text-uppercase fw-bold mb-1">Description</div>
+                        <p class="mb-0" id="pd_description" style="color:#374151;line-height:1.6;">—</p>
+                    </div>
+                </div>
+                <!-- Tâches -->
+                <div class="p-4">
+                    <h6 class="fw-bold mb-3" style="color:#1e1b4b;"><i class="fas fa-tasks me-2" style="color:#7c3aed;"></i>Tâches <span class="badge bg-secondary ms-1" id="pd_taches_count">0</span></h6>
+                    <div id="pd_taches_content">
+                        <p class="text-muted text-center py-3">Aucune tâche.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <a href="?action=projectlist" class="btn btn-outline-primary btn-sm">Voir tous les projets</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="<?= BASE_URL ?>/Views/assets/js/core/jquery-3.7.1.min.js"></script>
 <script src="<?= BASE_URL ?>/Views/assets/js/core/popper.min.js"></script>
 <script src="<?= BASE_URL ?>/Views/assets/js/core/bootstrap.min.js"></script>
@@ -828,6 +970,70 @@ function swalSuccess(msg) {
 }
 function swalError(msg) {
     Swal.fire({ icon: 'error', title: 'Erreur', text: msg });
+}
+
+// ── Voir détails projet ───────────────────────────────────────────────
+function voirProjet(id) {
+    const fd = new FormData();
+    fd.append('action', 'get_project_details');
+    fd.append('id', id);
+    fetch('?action=projectlist', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) { swalError(data.message || 'Erreur.'); return; }
+
+        document.getElementById('pd_titre').textContent = data.titre;
+        document.getElementById('pd_client').textContent = data.nom_client ? '👤 ' + data.nom_client : '';
+        document.getElementById('pd_budget').textContent = parseFloat(data.budget).toLocaleString('fr-FR', {minimumFractionDigits:2}) + ' TND';
+        document.getElementById('pd_avancement').textContent = data.avancement + '%';
+        document.getElementById('pd_description').textContent = data.description || '—';
+
+        // Statut badge
+        const statutColors = { en_cours: '#f59e0b', termine: '#10b981', en_attente: '#9ca3af' };
+        const statutLabels = { en_cours: 'En cours', termine: 'Terminé', en_attente: 'En attente' };
+        document.getElementById('pd_statut').innerHTML = `<span class="badge" style="background:${statutColors[data.statut]||'#9ca3af'}">${statutLabels[data.statut]||data.statut}</span>`;
+
+        // Etat badge
+        const etatColors = { publie: '#10b981', en_attente_validation: '#f59e0b', refuse: '#ef4444' };
+        const etatLabels = { publie: 'Publié', en_attente_validation: 'En attente', refuse: 'Refusé' };
+        document.getElementById('pd_etat').innerHTML = `<span class="badge" style="background:${etatColors[data.etat]||'#9ca3af'}">${etatLabels[data.etat]||data.etat}</span>`;
+
+        // Tâches
+        document.getElementById('pd_taches_count').textContent = data.taches.length;
+        if (data.taches.length === 0) {
+            document.getElementById('pd_taches_content').innerHTML = '<p class="text-muted text-center py-3">Aucune tâche pour ce projet.</p>';
+        } else {
+            const tacheColors = { a_faire: '#9ca3af', en_cours: '#f59e0b', termine: '#10b981' };
+            const tacheLabels = { a_faire: 'À faire', en_cours: 'En cours', termine: 'Terminé' };
+            const rows = data.taches.map(t => `
+                <div class="d-flex align-items-start gap-3 p-3 mb-2 rounded" style="background:#f8f9ff;border:1px solid #e8e4ff;">
+                    <div style="width:10px;height:10px;border-radius:50%;background:${tacheColors[t.statut]||'#9ca3af'};margin-top:5px;flex-shrink:0;"></div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <strong style="color:#1e1b4b;">${escapeHtmlAdmin(t.titre)}</strong>
+                            <div class="d-flex gap-2 align-items-center">
+                                ${t.prix > 0 ? `<span class="badge" style="background:#fff3cd;color:#8a6d3b;">${parseFloat(t.prix).toFixed(2)} TND</span>` : ''}
+                                <span class="badge" style="background:${tacheColors[t.statut]||'#9ca3af'};color:#fff;">${tacheLabels[t.statut]||t.statut}</span>
+                                ${t.payee ? '<span class="badge" style="background:#d1fae5;color:#065f46;">✓ Payée</span>' : ''}
+                            </div>
+                        </div>
+                        ${t.description ? `<div class="small text-muted mt-1">${escapeHtmlAdmin(t.description)}</div>` : ''}
+                        <div class="small mt-1" style="color:#9ca3af;">
+                            <i class="fas fa-user me-1"></i>${escapeHtmlAdmin(t.prenom_freelancer + ' ' + t.nom_freelancer)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('pd_taches_content').innerHTML = rows;
+        }
+
+        new bootstrap.Modal(document.getElementById('projetDetailsModal')).show();
+    })
+    .catch(() => swalError('Erreur réseau.'));
+}
+
+function escapeHtmlAdmin(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ── Ajout projet ──────────────────────────────────────────────────────
@@ -1038,6 +1244,7 @@ function validerCand(id, action) {
 
 const toggleSidebarBtn = document.querySelector('.toggle-sidebar');
 const showSidebarBtn   = document.getElementById('showSidebarBtn');
+const wrapper          = document.getElementById('wrapper');
 
 document.getElementById('addProjectModal').addEventListener('hidden.bs.modal', function () {
     const form = document.getElementById('addProjectForm');
@@ -1117,6 +1324,174 @@ document.getElementById('addTacheAdminForm').addEventListener('submit', function
         }
     })
     .catch(() => swalError('Erreur réseau.'));
+});
+
+// ── Modifier tâche (Admin) ────────────────────────────────────────────
+function openEditTacheAdmin(id, titre, description, statut, prix) {
+    document.getElementById('eta_id').value          = id;
+    document.getElementById('eta_titre').value       = titre;
+    document.getElementById('eta_description').value = description || '';
+    document.getElementById('eta_statut').value      = statut;
+    document.getElementById('eta_prix').value        = prix > 0 ? prix : '';
+    // Reset validation
+    ['eta_titre','eta_prix','eta_description'].forEach(fid => {
+        const el = document.getElementById(fid);
+        if (el) el.classList.remove('is-invalid','is-valid');
+    });
+    ['err_eta_titre','err_eta_prix','err_eta_description'].forEach(fid => {
+        const el = document.getElementById(fid);
+        if (el) el.textContent = '';
+    });
+    new bootstrap.Modal(document.getElementById('editTacheAdminModal')).show();
+}
+
+document.getElementById('editTacheAdminForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    let valid = true;
+
+    const titre = document.getElementById('eta_titre');
+    const prix  = document.getElementById('eta_prix');
+    const desc  = document.getElementById('eta_description');
+
+    [titre, prix, desc].forEach(el => el.classList.remove('is-invalid','is-valid'));
+
+    // Titre
+    if (titre.value.trim() === '') {
+        titre.classList.add('is-invalid');
+        document.getElementById('err_eta_titre').textContent = 'Le titre est obligatoire.';
+        valid = false;
+    } else if (titre.value.trim().length < 3) {
+        titre.classList.add('is-invalid');
+        document.getElementById('err_eta_titre').textContent = 'Minimum 3 caractères.';
+        valid = false;
+    } else if (titre.value.trim().length > 150) {
+        titre.classList.add('is-invalid');
+        document.getElementById('err_eta_titre').textContent = 'Maximum 150 caractères.';
+        valid = false;
+    } else { titre.classList.add('is-valid'); }
+
+    // Prix
+    const prixVal = parseFloat(prix.value);
+    if (prix.value.trim() === '') {
+        prix.classList.add('is-invalid');
+        document.getElementById('err_eta_prix').textContent = 'Le prix est obligatoire.';
+        valid = false;
+    } else if (isNaN(prixVal) || prixVal < 0) {
+        prix.classList.add('is-invalid');
+        document.getElementById('err_eta_prix').textContent = 'Le prix doit être un nombre positif ou nul.';
+        valid = false;
+    } else { prix.classList.add('is-valid'); }
+
+    // Description
+    if (desc.value.trim() === '') {
+        desc.classList.add('is-invalid');
+        document.getElementById('err_eta_description').textContent = 'La description est obligatoire.';
+        valid = false;
+    } else if (desc.value.trim().length < 5) {
+        desc.classList.add('is-invalid');
+        document.getElementById('err_eta_description').textContent = 'Minimum 5 caractères.';
+        valid = false;
+    } else if (desc.value.trim().length > 500) {
+        desc.classList.add('is-invalid');
+        document.getElementById('err_eta_description').textContent = 'Maximum 500 caractères.';
+        valid = false;
+    } else { desc.classList.add('is-valid'); }
+
+    if (!valid) return;
+
+    const fd = new FormData(this);
+    fd.append('action', 'edit_tache_admin');
+    fetch('?action=projectlist', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editTacheAdminModal')).hide();
+            Swal.fire({ icon:'success', title:'Tâche modifiée !', timer:1500, showConfirmButton:false })
+                .then(() => location.reload());
+        } else {
+            swalError(data.message);
+        }
+    })
+    .catch(() => swalError('Erreur réseau.'));
+});
+
+// ── Supprimer tâche (Admin) ───────────────────────────────────────────
+function deleteTacheAdmin(id) {
+    Swal.fire({
+        title: 'Supprimer cette tâche ?',
+        text: 'Cette action est irréversible.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Oui, supprimer',
+        cancelButtonText: 'Annuler'
+    }).then(r => {
+        if (!r.isConfirmed) return;
+        const fd = new FormData();
+        fd.append('action', 'delete_tache_admin');
+        fd.append('id', id);
+        fetch('?action=projectlist', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({ icon:'success', title:'Supprimée !', timer:1200, showConfirmButton:false })
+                    .then(() => location.reload());
+            } else {
+                swalError(data.message || 'Erreur.');
+            }
+        })
+        .catch(() => swalError('Erreur réseau.'));
+    });
+}
+// ── Graphiques Chart.js ───────────────────────────────────────────────
+const moisLabels = <?= json_encode($moisLabels) ?>;
+const moisData   = <?= json_encode(array_map('intval', $moisData)) ?>;
+
+// Graphique barres — projets par mois
+new Chart(document.getElementById('chartProjets'), {
+    type: 'bar',
+    data: {
+        labels: moisLabels.length ? moisLabels : ['Aucune donnée'],
+        datasets: [{
+            label: 'Projets créés',
+            data: moisData.length ? moisData : [0],
+            backgroundColor: 'rgba(37,99,235,0.7)',
+            borderColor: '#2563eb',
+            borderWidth: 1,
+            borderRadius: 6,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+});
+
+// Graphique donut — candidatures
+new Chart(document.getElementById('chartCandidatures'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Acceptées', 'En attente', 'Refusées'],
+        datasets: [{
+            data: [
+                <?= (int)$statsCands['acceptees'] ?>,
+                <?= (int)$statsCands['en_attente'] ?>,
+                <?= (int)$statsCands['refusees'] ?>
+            ],
+            backgroundColor: ['#27ae60','#f39c12','#e74c3c'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 12 } } }
+        },
+        cutout: '65%'
+    }
 });
 </script>
 </body>

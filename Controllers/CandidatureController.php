@@ -391,4 +391,30 @@ class CandidatureController
             return $q->fetchAll();
         } catch (Exception $e) { return []; }
     }
+
+    // ── MODIFIER TACHE (ADMIN) ────────────────────────────────────────
+    public function modifierTacheAdmin($id, $titre, $description, $statut, $prix)
+    {
+        $db = Config::getConnexion();
+        try {
+            $q = $db->prepare("UPDATE tache SET titre=:t, description=:d, statut=:s, prix=:p WHERE id=:id");
+            $q->execute(['t'=>$titre,'d'=>$description,'s'=>$statut,'p'=>$prix,'id'=>$id]);
+            return ['success' => true, 'message' => 'Tâche modifiée.'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    // ── SUPPRIMER TACHE (ADMIN) ───────────────────────────────────────
+    public function supprimerTacheAdmin($id)
+    {
+        $db = Config::getConnexion();
+        try {
+            $q = $db->prepare("DELETE FROM tache WHERE id=:id");
+            $q->execute(['id' => $id]);
+            return ['success' => true];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
 }

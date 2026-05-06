@@ -49,6 +49,9 @@ switch ($request) {
     case 'userlist':
         require 'Views/Backoffice/userList.php';
         break;
+    case 'dashboard':
+        require 'Views/Backoffice/dashboard.php';
+        break;
     case 'projectlist':
         require 'Views/Backoffice/projectList.php';
         break;
