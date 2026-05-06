@@ -7,12 +7,26 @@ require_once __DIR__ . '/Controllers/ChatController.php';
 require_once __DIR__ . '/Controllers/OffreController.php';
 require_once __DIR__ . '/Controllers/BrainstormingController.php';
 require_once __DIR__ . '/Controllers/IdeeController.php';
+require_once __DIR__ . '/Services/TranslationService.php';
+require_once __DIR__ . '/Services/BrainstormingSummaryService.php';
+require_once __DIR__ . '/Services/PexelsImageService.php';
 
 $request = $_GET['action'] ?? 'home';
 $serviceController = new ServiceController();
 $categorieController = new CategorieController();
 $chatController = new ChatController();
 $offreController = new OffreController();
+
+function jsonResponse(array $payload): void
+{
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 if ($request === 'logout') {
     $_SESSION = [];
@@ -202,6 +216,87 @@ switch ($request) {
 
     case 'export_idees_excel':
         require __DIR__ . '/Views/Backoffice/exportIdeesExcel.php';
+        break;
+
+    case 'translate_entity':
+        if (!isset($_SESSION['user_id'])) {
+            jsonResponse(['success' => false, 'message' => 'Authentification requise.']);
+        }
+
+        $entity = $_POST['entity'] ?? '';
+        $id = (int) ($_POST['id'] ?? 0);
+        $targetLanguage = $_POST['target_language'] ?? 'EN';
+        $translationService = new TranslationService();
+
+        if ($entity === 'brainstorming') {
+            $brainstormingController = new BrainstormingController();
+            $brainstorming = $brainstormingController->getById($id);
+            $isAdmin = (int) ($_SESSION['user_role'] ?? 0) === 1;
+
+            if (!$brainstorming || (!$isAdmin && (int) ($brainstorming['accepted'] ?? 0) !== 1)) {
+                jsonResponse(['success' => false, 'message' => 'Brainstorming introuvable ou non accessible.']);
+            }
+
+            jsonResponse($translationService->translateFields([
+                'titre' => $brainstorming['titre'] ?? '',
+                'description' => $brainstorming['description'] ?? '',
+            ], $targetLanguage));
+        }
+
+        if ($entity === 'idee') {
+            $ideeModel = new Idee();
+            $idee = $ideeModel->getById($id);
+            $isAdmin = (int) ($_SESSION['user_role'] ?? 0) === 1;
+
+            if (!$idee || (!$isAdmin && (int) ($idee['brainstorming_accepted'] ?? 0) !== 1)) {
+                jsonResponse(['success' => false, 'message' => 'Idee introuvable ou non accessible.']);
+            }
+
+            jsonResponse($translationService->translateFields([
+                'titre' => $idee['titre'] ?? '',
+                'contenu' => $idee['contenu'] ?? '',
+            ], $targetLanguage));
+        }
+
+        jsonResponse(['success' => false, 'message' => 'Entite non supportee.']);
+        break;
+
+    case 'summarize_brainstorming':
+        if (!isset($_SESSION['user_id'])) {
+            jsonResponse(['success' => false, 'message' => 'Authentification requise.']);
+        }
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $brainstormingController = new BrainstormingController();
+        $brainstorming = $brainstormingController->getById($id);
+        $isAdmin = (int) ($_SESSION['user_role'] ?? 0) === 1;
+
+        if (!$brainstorming || (!$isAdmin && (int) ($brainstorming['accepted'] ?? 0) !== 1)) {
+            jsonResponse(['success' => false, 'message' => 'Brainstorming introuvable ou non accessible.']);
+        }
+
+        $ideeModel = new Idee();
+        $idees = $ideeModel->getAllByBrainstorming($id);
+        $summaryService = new BrainstormingSummaryService();
+        jsonResponse($summaryService->summarize($brainstorming, $idees));
+        break;
+
+    case 'brainstorming_image':
+        if (!isset($_SESSION['user_id'])) {
+            jsonResponse(['success' => false, 'message' => 'Authentification requise.']);
+        }
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $brainstormingController = new BrainstormingController();
+        $brainstorming = $brainstormingController->getById($id);
+        $isAdmin = (int) ($_SESSION['user_role'] ?? 0) === 1;
+
+        if (!$brainstorming || (!$isAdmin && (int) ($brainstorming['accepted'] ?? 0) !== 1)) {
+            jsonResponse(['success' => false, 'message' => 'Brainstorming introuvable ou non accessible.']);
+        }
+
+        $pexelsService = new PexelsImageService();
+        jsonResponse($pexelsService->findBrainstormingImage($brainstorming));
         break;
 
     case 'list_idees':

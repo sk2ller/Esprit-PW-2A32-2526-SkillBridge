@@ -3,6 +3,7 @@ class Config
 {
     private static $connexion = null;
     private static $openRouterApiKey = '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';
+    private static $geminiApiKey = 'AIzaSyApeFHpMahTZ0WmxYzmRHQNP7jQVfZRKuQ';
     
     public static function getConnexion()
     {
@@ -40,7 +41,7 @@ class Config
         $provider = self::getAiProvider();
 
         if ($provider === 'gemini') {
-            return getenv('GEMINI_API_KEY') ?: getenv('GOOGLE_API_KEY') ?: '';
+            return getenv('GEMINI_API_KEY') ?: getenv('GOOGLE_API_KEY') ?: self::$geminiApiKey;
         }
 
         return getenv('SKILLBRIDGE_AI_API_KEY') ?: '';
@@ -56,6 +57,20 @@ class Config
 
         return getenv('SKILLBRIDGE_AI_MODEL') ?: 'default';
     }
+
+    public static function getPerspectiveApiKey(): string
+    {
+        return getenv('PERSPECTIVE_API_KEY') ?: '';
+    }
+
+    public static function getDeepLApiKey(): string
+    {
+        return getenv('DEEPL_API_KEY') ?: '';
+    }
+
+    public static function getPexelsApiKey(): string
+    {
+        return getenv('PEXELS_API_KEY') ?: 'mOoeeoSCob0mrHif3zAJrABnsbW7UAOmJSM3v4u1SI6pSuSDoaiP1mli';
+    }
 }
 ?>
-

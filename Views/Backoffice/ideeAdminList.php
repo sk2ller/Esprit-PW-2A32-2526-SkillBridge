@@ -68,11 +68,20 @@ $rejectedIdees = count(array_filter($idees, fn($idee) => $idee['statut'] === 're
         .admin-field textarea { min-height: 130px; resize: vertical; }
         .field-error { color: #b42318; font-size: .78rem; font-weight: 800; line-height: 1.35; min-height: 1rem; }
         .admin-field.has-error input, .admin-field.has-error select, .admin-field.has-error textarea { border-color: #d92d20; box-shadow: 0 0 0 3px rgba(217, 45, 32, .12); }
+        .moderation-alert { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: .8rem; align-items: start; border: 1px solid rgba(217, 45, 32, .18); border-left: 5px solid #d92d20; border-radius: 14px; background: #fff7f5; color: #7a271a; padding: .9rem 1rem; margin-bottom: 1rem; }
+        .moderation-alert-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; background: #fee4e2; color: #b42318; }
+        .moderation-alert-title { font-weight: 900; margin-bottom: .15rem; }
+        .moderation-alert-text { margin: 0; color: #912018; line-height: 1.45; }
+        .suggestion-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+        .suggestion-card { border: 1px solid rgba(223, 209, 189, .9); border-radius: 14px; background: rgba(255,255,255,.72); padding: .9rem; }
+        .suggestion-card.full { grid-column: 1 / -1; }
+        .suggestion-label { color: var(--text-muted); font-size: .74rem; text-transform: uppercase; font-weight: 800; margin-bottom: .25rem; }
+        .suggestion-list { margin: .4rem 0 0; padding-left: 1.1rem; color: var(--text-muted); }
         .admin-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
         .admin-detail-card { border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,.68); padding: .85rem; }
         .admin-detail-label { color: var(--text-muted); font-size: .75rem; font-weight: 800; text-transform: uppercase; }
         .admin-detail-value { margin-top: .25rem; font-weight: 700; line-height: 1.45; }
-        @media (max-width: 900px) { .admin-dialog-grid, .admin-form-grid, .admin-detail-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) { .admin-dialog-grid, .admin-form-grid, .admin-detail-grid, .suggestion-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body class="skillbridge-admin">
@@ -148,7 +157,8 @@ $rejectedIdees = count(array_filter($idees, fn($idee) => $idee['statut'] === 're
                     <td>
                         <div class="admin-stack-actions">
                             <button class="admin-btn admin-btn-outline admin-btn-sm" type="button" onclick="openViewIdee(<?= (int)$idee['id'] ?>)">Voir</button>
-                            <button class="admin-btn admin-btn-outline admin-btn-sm" type="button" disabled title="Score IA desactive pour le moment">Score IA</button>
+                            <button class="admin-btn admin-btn-outline admin-btn-sm" type="button" onclick="scoreIdeeWithAi(<?= (int)$idee['id'] ?>)">Score idee</button>
+                            <button class="admin-btn admin-btn-outline admin-btn-sm" type="button" onclick="suggestIdeeImprovements(<?= (int)$idee['id'] ?>)">Suggestions</button>
                             <button class="admin-btn admin-btn-outline admin-btn-sm" type="button" onclick="openEditIdee(<?= (int)$idee['id'] ?>)">Modifier</button>
                             <button class="admin-btn admin-btn-danger admin-btn-sm" type="button" onclick="deleteIdee(<?= (int)$idee['id'] ?>)">Supprimer</button>
                         </div>
@@ -164,6 +174,8 @@ $rejectedIdees = count(array_filter($idees, fn($idee) => $idee['statut'] === 're
 <dialog class="admin-dialog" id="ideeViewDialog"><div class="admin-dialog-head"><div class="admin-dialog-title">Brainstorming lie</div><button class="admin-btn admin-btn-outline admin-btn-sm" type="button" onclick="closeDialog('ideeViewDialog')">Fermer</button></div><div class="admin-dialog-body" id="ideeViewContent">Chargement...</div></dialog>
 
 <dialog class="admin-dialog" id="aiScoreDialog"><div class="admin-dialog-head"><div class="admin-dialog-title">Score IA de l idee</div><button class="admin-btn admin-btn-outline admin-btn-sm" type="button" onclick="closeDialog('aiScoreDialog')">Fermer</button></div><div class="admin-dialog-body" id="aiScoreContent">Chargement...</div></dialog>
+
+<dialog class="admin-dialog" id="ideaSuggestionDialog"><div class="admin-dialog-head"><div><div class="admin-dialog-title">Suggestions d amelioration</div><div id="suggestionSource" style="color:var(--text-muted); font-size:.85rem; margin-top:.2rem;">Analyse de l idee</div></div><button class="admin-btn admin-btn-outline admin-btn-sm" type="button" onclick="closeDialog('ideaSuggestionDialog')">Fermer</button></div><div class="admin-dialog-body" id="suggestionContent">Chargement...</div></dialog>
 
 <dialog class="admin-dialog" id="ideeAddDialog">
     <form id="addIdeeAdminForm">
@@ -199,20 +211,24 @@ $rejectedIdees = count(array_filter($idees, fn($idee) => $idee['statut'] === 're
 </dialog>
 
 <script>
-function renderErrors(errors) { if (!errors) return ''; const list = Array.isArray(errors) ? errors : Object.values(errors); return '<div class="admin-alert admin-alert-danger"><strong>Erreur</strong><ul style="margin:.45rem 0 0; padding-left:1.1rem;">' + list.map(error => '<li>' + escapeHtml(error) + '</li>').join('') + '</ul></div>'; }
+function isModerationMessage(message) { return String(message || '').toLowerCase().includes('contenu bloque'); }
+function moderationAlert(title = 'Contenu refuse') { return '<div class="moderation-alert"><div class="moderation-alert-icon"><i class="fas fa-shield-halved"></i></div><div><div class="moderation-alert-title">' + escapeHtml(title) + '</div><p class="moderation-alert-text">Le texte contient un contenu non autorise. Retirez les insultes, menaces ou elements de spam, puis reessayez.</p></div></div>'; }
+function renderErrors(errors) { if (!errors) return ''; const list = [...new Set(Array.isArray(errors) ? errors : Object.values(errors))]; if (list.some(isModerationMessage)) return moderationAlert(); return '<div class="admin-alert admin-alert-danger"><strong>Erreur</strong><ul style="margin:.45rem 0 0; padding-left:1.1rem;">' + list.map(error => '<li>' + escapeHtml(error) + '</li>').join('') + '</ul></div>'; }
 function clearFieldErrors(form) { form.querySelectorAll('.admin-field').forEach(field => field.classList.remove('has-error')); form.querySelectorAll('.field-error').forEach(box => box.textContent = ''); }
 function showFieldErrors(form, errors) {
     clearFieldErrors(form);
     if (!errors || Array.isArray(errors)) return false;
+    let shown = false;
     Object.entries(errors).forEach(([field, message]) => {
         const box = form.querySelector('[data-error-for="' + field + '"]');
         if (box) {
-            box.textContent = message;
+            box.textContent = isModerationMessage(message) ? 'Contenu refuse par la moderation automatique.' : message;
             const wrapper = box.closest('.admin-field');
             if (wrapper) wrapper.classList.add('has-error');
+            shown = true;
         }
     });
-    return true;
+    return shown;
 }
 function showPageAlert(message, type = 'success') { const alert = document.getElementById('adminIdeeAlert'); const klass = type === 'success' ? 'admin-alert-success' : 'admin-alert-danger'; alert.innerHTML = '<div class="admin-alert ' + klass + '">' + message + '</div>'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function escapeHtml(value) { return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
@@ -268,7 +284,10 @@ function submitAdminIdeeForm(form, action, dialogId, errorId) {
 }
 document.getElementById('addIdeeAdminForm').addEventListener('submit', event => { event.preventDefault(); submitAdminIdeeForm(event.currentTarget, 'add_idee_admin', 'ideeAddDialog', 'addIdeeErrors'); });
 document.getElementById('editIdeeAdminForm').addEventListener('submit', event => { event.preventDefault(); submitAdminIdeeForm(event.currentTarget, 'edit_idee_admin', 'ideeEditDialog', 'editIdeeErrors'); });
-function scoreIdeeWithAi(id) { const dialog = document.getElementById('aiScoreDialog'); const content = document.getElementById('aiScoreContent'); content.innerHTML = '<p style="margin:0;">Analyse IA en cours...</p>'; dialog.showModal(); const formData = new FormData(); formData.append('action', 'score_idee_ai'); formData.append('id', id); fetch('?action=idee_admin', { method: 'POST', body: formData }).then(readJsonResponse).then(data => { if (!data.success) { content.innerHTML = '<div class="admin-alert admin-alert-danger">' + escapeHtml(data.message || 'Erreur IA.') + '</div>'; return; } const s = data.scoring; content.innerHTML = '<div class="admin-dialog-grid">' + scoreBadge(s.clarity, 'Clarte') + scoreBadge(s.originality, 'Originalite') + scoreBadge(s.feasibility, 'Faisabilite') + scoreBadge(s.impact, 'Impact') + scoreBadge(s.global_score, 'Global') + '</div><h4>Resume</h4><p>' + escapeHtml(s.summary) + '</p><h4>Forces</h4>' + renderAiList(s.strengths) + '<h4>Risques</h4>' + renderAiList(s.risks) + '<h4>Recommandation admin</h4><p>' + escapeHtml(s.admin_recommendation) + '</p>'; }).catch(() => { content.innerHTML = '<div class="admin-alert admin-alert-danger">Erreur reseau pendant l analyse IA.</div>'; }); }
+function scoreIdeeWithAi(id) { const dialog = document.getElementById('aiScoreDialog'); const content = document.getElementById('aiScoreContent'); content.innerHTML = '<p style="margin:0;">Analyse en cours...</p>'; dialog.showModal(); const formData = new FormData(); formData.append('action', 'score_idee_ai'); formData.append('id', id); fetch('?action=idee_admin', { method: 'POST', body: formData }).then(readJsonResponse).then(data => { if (!data.success) { content.innerHTML = '<div class="admin-alert admin-alert-danger">' + escapeHtml(data.message || 'Erreur analyse.') + '</div>'; return; } const s = data.scoring; content.innerHTML = '<div class="admin-dialog-grid">' + scoreBadge(s.clarity, 'Clarte') + scoreBadge(s.innovation, 'Innovation') + scoreBadge(s.feasibility, 'Faisabilite') + scoreBadge(s.positivity, 'Positivite') + scoreBadge(s.confidence, 'Confiance') + '</div><div class="admin-score-card" style="margin-bottom:1rem;"><div class="admin-score-label">Score global</div><div class="admin-score-value">' + escapeHtml(s.global_score) + '/100</div></div><p style="color:var(--text-muted); font-weight:800;">' + escapeHtml(s.source || 'Analyse') + '</p><h4>Resume</h4><p>' + escapeHtml(s.summary) + '</p><h4>Forces</h4>' + renderAiList(s.strengths) + '<h4>Risques</h4>' + renderAiList(s.risks) + '<h4>Recommandation</h4><p>' + escapeHtml(s.recommendation) + '</p>'; }).catch(() => { content.innerHTML = '<div class="admin-alert admin-alert-danger">Erreur reseau pendant l analyse.</div>'; }); }
+function renderSuggestionList(items) { if (!Array.isArray(items) || items.length === 0) return '<p style="margin:0; color:var(--text-muted);">Aucune suggestion detaillee.</p>'; return '<ul class="suggestion-list">' + items.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>'; }
+function renderSuggestions(data) { const s = data.suggestions || {}; document.getElementById('suggestionSource').textContent = data.source || 'Analyse de l idee'; document.getElementById('suggestionContent').innerHTML = '<div class="suggestion-grid">' + '<div class="suggestion-card full"><div class="suggestion-label">Titre ameliore</div><div>' + escapeHtml(s.improved_title || '-') + '</div></div>' + '<div class="suggestion-card full"><div class="suggestion-label">Resume ameliore</div><div>' + escapeHtml(s.improved_summary || '-') + '</div></div>' + '<div class="suggestion-card"><div class="suggestion-label">Utilisateur cible</div><div>' + escapeHtml(s.target_user || '-') + '</div></div>' + '<div class="suggestion-card"><div class="suggestion-label">Probleme</div><div>' + escapeHtml(s.problem || '-') + '</div></div>' + '<div class="suggestion-card full"><div class="suggestion-label">Valeur proposee</div><div>' + escapeHtml(s.value_proposition || '-') + '</div></div>' + '<div class="suggestion-card"><div class="suggestion-label">Prochaines etapes</div>' + renderSuggestionList(s.next_steps) + '</div>' + '<div class="suggestion-card"><div class="suggestion-label">Questions a clarifier</div>' + renderSuggestionList(s.questions) + '</div>' + '</div>'; }
+function suggestIdeeImprovements(id) { const dialog = document.getElementById('ideaSuggestionDialog'); const content = document.getElementById('suggestionContent'); document.getElementById('suggestionSource').textContent = 'Gemini API'; content.innerHTML = '<p style="margin:0;">Generation des suggestions...</p>'; dialog.showModal(); const formData = new FormData(); formData.append('action', 'suggest_idee_improvements'); formData.append('id', id); fetch('?action=idee_admin', { method: 'POST', body: formData }).then(readJsonResponse).then(data => { if (!data.success) { document.getElementById('suggestionSource').textContent = 'Configuration API requise'; content.innerHTML = '<div class="admin-alert admin-alert-danger"><strong>Suggestions indisponibles</strong><br>' + escapeHtml(data.message || 'Ajoutez une cle Gemini API pour utiliser cette fonctionnalite.') + '</div>'; return; } renderSuggestions(data); }).catch(() => { document.getElementById('suggestionSource').textContent = 'Erreur reseau'; content.innerHTML = '<div class="admin-alert admin-alert-danger">Erreur reseau pendant la generation.</div>'; }); }
 function updateIdeeStatus(id, status) { const formData = new FormData(); formData.append('action', 'update_status'); formData.append('id', id); formData.append('status', status); fetch('?action=idee_admin', { method: 'POST', body: formData }).then(readJsonResponse).then(data => { showPageAlert(escapeHtml(data.message || 'Statut mis a jour.'), data.success ? 'success' : 'danger'); if (data.success) setTimeout(() => location.reload(), 650); }).catch(() => showPageAlert('Erreur reseau pendant la mise a jour.', 'danger')); }
 function deleteIdee(id) { if (!confirm('Supprimer cette idee ?')) return; const formData = new FormData(); formData.append('action', 'delete_idee'); formData.append('id', id); fetch('?action=idee_admin', { method: 'POST', body: formData }).then(readJsonResponse).then(data => { showPageAlert(escapeHtml(data.message || 'Operation terminee.'), data.success ? 'success' : 'danger'); if (data.success) { const row = document.getElementById('idee-row-' + id); if (row) row.remove(); } }).catch(() => showPageAlert('Erreur reseau pendant la suppression.', 'danger')); }
 </script>

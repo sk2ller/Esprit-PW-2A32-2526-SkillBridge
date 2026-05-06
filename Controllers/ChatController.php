@@ -1,16 +1,19 @@
 <?php
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/ServiceController.php';
+require_once __DIR__ . '/../Services/BadContentFilterService.php';
 
 class ChatController
 {
     private $db;
     private $serviceController;
+    private $badContentFilter;
 
     public function __construct()
     {
         $this->db = Config::getConnexion();
         $this->serviceController = new ServiceController();
+        $this->badContentFilter = new BadContentFilterService();
         $this->ensureChatSchema();
     }
 
@@ -274,6 +277,20 @@ class ChatController
         if (!$conversation || $message === '') {
             http_response_code(422);
             echo json_encode(['success' => false, 'message' => 'Message invalide.']);
+            return;
+        }
+
+        $moderation = $this->badContentFilter->analyze($message);
+        if ($moderation['blocked']) {
+            http_response_code(422);
+            echo json_encode([
+                'success' => false,
+                'message' => $moderation['message'],
+                'moderation' => [
+                    'score' => $moderation['score'],
+                    'issues' => $moderation['issues'],
+                ],
+            ]);
             return;
         }
 

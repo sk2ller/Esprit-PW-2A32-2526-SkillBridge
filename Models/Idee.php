@@ -1,5 +1,6 @@
 <?php
 require_once(__DIR__ . '/../config.php');
+require_once(__DIR__ . '/../Services/BadContentFilterService.php');
 
 class Idee
 {
@@ -190,6 +191,7 @@ class Idee
     public function validate($data, $validateUser = true)
     {
         $this->validationErrors = [];
+        $badContentFilter = new BadContentFilterService();
 
         if (strlen($data['titre']) < 4 || strlen($data['titre']) > 120) {
             $this->validationErrors['titre'] = 'Le titre doit contenir entre 4 et 120 caracteres.';
@@ -197,6 +199,17 @@ class Idee
 
         if (strlen($data['contenu']) < 10 || strlen($data['contenu']) > 3000) {
             $this->validationErrors['contenu'] = 'Le contenu doit contenir entre 10 et 3000 caracteres.';
+        }
+
+        $moderation = $badContentFilter->validateFields([
+            'titre' => $data['titre'] ?? '',
+            'contenu' => $data['contenu'] ?? '',
+        ]);
+
+        if (!$moderation['valid']) {
+            foreach ($moderation['errors'] as $field => $message) {
+                $this->validationErrors[$field] = $message;
+            }
         }
 
         if (!in_array($data['priorite'], ['faible', 'moyenne', 'haute'], true)) {

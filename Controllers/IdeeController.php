@@ -2,18 +2,21 @@
 require_once(__DIR__ . '/../Models/Idee.php');
 require_once(__DIR__ . '/../Controllers/BrainstormingController.php');
 require_once(__DIR__ . '/../Services/AiIdeaScoringService.php');
+require_once(__DIR__ . '/../Services/IdeaImprovementService.php');
 
 class IdeeController
 {
     private $ideeModel;
     private $brainstormingController;
     private $aiIdeaScoringService;
+    private $ideaImprovementService;
 
     public function __construct()
     {
         $this->ideeModel = new Idee();
         $this->brainstormingController = new BrainstormingController();
         $this->aiIdeaScoringService = new AiIdeaScoringService();
+        $this->ideaImprovementService = new IdeaImprovementService();
     }
 
     private function isAdmin(): bool
@@ -87,6 +90,24 @@ class IdeeController
         if (!$brainstorming || !$this->canAccessBrainstorming($brainstorming)) {
             header('Location: index.php?action=brainstorming_list');
             exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'score_idee_ai') {
+            $idee = $this->ideeModel->getById((int) ($_POST['id'] ?? 0));
+            if (!$idee || (int) $idee['brainstorming_id'] !== $brainstormingId) {
+                $this->jsonResponse(['success' => false, 'message' => 'Idee introuvable.']);
+            }
+
+            $this->jsonResponse($this->aiIdeaScoringService->scoreIdea($idee));
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'suggest_idee_improvements') {
+            $idee = $this->ideeModel->getById((int) ($_POST['id'] ?? 0));
+            if (!$idee || (int) $idee['brainstorming_id'] !== $brainstormingId) {
+                $this->jsonResponse(['success' => false, 'message' => 'Idee introuvable.']);
+            }
+
+            $this->jsonResponse($this->ideaImprovementService->suggest($idee));
         }
 
         $idees = $this->ideeModel->getAllByBrainstorming($brainstormingId);
@@ -227,6 +248,15 @@ class IdeeController
                 $this->jsonResponse($this->aiIdeaScoringService->scoreIdea($idee));
             }
 
+            if ($action === 'suggest_idee_improvements' && $id > 0) {
+                $idee = $this->ideeModel->getById($id);
+                if (!$idee) {
+                    $this->jsonResponse(['success' => false, 'message' => 'Idee introuvable.']);
+                }
+
+                $this->jsonResponse($this->ideaImprovementService->suggest($idee));
+            }
+
             if ($action === 'delete_idee' && $id > 0) {
                 $success = $this->ideeModel->delete($id);
                 $this->jsonResponse([
@@ -285,11 +315,71 @@ class IdeeController
             $this->jsonResponse($result + ['message' => $result['success'] ? 'Idee modifiee avec succes.' : ($result['message'] ?? 'Erreur formulaire.')]);
         }
 
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'score_idee_ai') {
+            $idee = $this->ideeModel->getById((int) ($_POST['id'] ?? 0));
+            if (!$idee) {
+                $this->jsonResponse(['success' => false, 'message' => 'Idee introuvable.']);
+            }
+
+            if (!$isAdmin && (int) ($idee['brainstorming_accepted'] ?? 0) !== 1) {
+                $this->jsonResponse(['success' => false, 'message' => 'Brainstorming non accessible.']);
+            }
+
+            $this->jsonResponse($this->aiIdeaScoringService->scoreIdea($idee));
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'suggest_idee_improvements') {
+            $idee = $this->ideeModel->getById((int) ($_POST['id'] ?? 0));
+            if (!$idee) {
+                $this->jsonResponse(['success' => false, 'message' => 'Idee introuvable.']);
+            }
+
+            if (!$isAdmin && (int) ($idee['brainstorming_accepted'] ?? 0) !== 1) {
+                $this->jsonResponse(['success' => false, 'message' => 'Brainstorming non accessible.']);
+            }
+
+            $this->jsonResponse($this->ideaImprovementService->suggest($idee));
+        }
+
         $idees = $this->ideeModel->getAll();
 
         if (!$isAdmin) {
             $idees = array_values(array_filter($idees, function ($idee) {
                 return (int) ($idee['brainstorming_accepted'] ?? 0) === 1;
+            }));
+        }
+
+        // Apply filters
+        $searchTerm = $_GET['search'] ?? '';
+        $statusFilter = $_GET['status'] ?? '';
+        $prioriteFilter = $_GET['priorite'] ?? '';
+        $categorieFilter = $_GET['categorie'] ?? '';
+
+        if ($searchTerm !== '') {
+            $searchLower = strtolower($searchTerm);
+            $idees = array_values(array_filter($idees, function ($idee) use ($searchLower) {
+                return strpos(strtolower($idee['titre'] ?? ''), $searchLower) !== false ||
+                       strpos(strtolower($idee['contenu'] ?? ''), $searchLower) !== false ||
+                       strpos(strtolower($idee['categorie'] ?? ''), $searchLower) !== false ||
+                       strpos(strtolower($idee['brainstorming_titre'] ?? ''), $searchLower) !== false;
+            }));
+        }
+
+        if ($statusFilter !== '') {
+            $idees = array_values(array_filter($idees, function ($idee) use ($statusFilter) {
+                return $idee['statut'] === $statusFilter;
+            }));
+        }
+
+        if ($prioriteFilter !== '') {
+            $idees = array_values(array_filter($idees, function ($idee) use ($prioriteFilter) {
+                return $idee['priorite'] === $prioriteFilter;
+            }));
+        }
+
+        if ($categorieFilter !== '') {
+            $idees = array_values(array_filter($idees, function ($idee) use ($categorieFilter) {
+                return $idee['categorie'] === $categorieFilter;
             }));
         }
 

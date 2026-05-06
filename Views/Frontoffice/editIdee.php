@@ -3,6 +3,10 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: index.php?action=login');
     exit;
 }
+
+$uniqueValidationErrors = array_values(array_unique($validationErrors ?? []));
+$displayValidationErrors = array_values(array_filter($uniqueValidationErrors, fn($message) => $message !== ($error ?? '')));
+$isModerationError = !empty($error) && stripos($error, 'Contenu bloque') !== false;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -14,6 +18,44 @@ if (!isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="Views/assets/css/enhanced-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="Views/assets/css/skillbridge-front.css">
+    <style>
+        .moderation-alert {
+            display: grid;
+            grid-template-columns: 44px minmax(0, 1fr);
+            gap: .9rem;
+            align-items: start;
+            border: 1px solid rgba(217, 45, 32, .18);
+            border-left: 5px solid #d92d20;
+            border-radius: 16px;
+            background: #fff7f5;
+            color: #7a271a;
+            padding: 1rem 1.1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .moderation-alert-icon {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: #fee4e2;
+            color: #b42318;
+            font-size: 1.1rem;
+        }
+
+        .moderation-alert-title {
+            font-weight: 900;
+            color: #7a271a;
+            margin-bottom: .2rem;
+        }
+
+        .moderation-alert-text {
+            margin: 0;
+            color: #912018;
+            line-height: 1.45;
+        }
+    </style>
 </head>
 <body class="skillbridge-front">
 <?php include __DIR__ . '/partials/front_navbar.php'; ?>
@@ -31,16 +73,29 @@ if (!isset($_SESSION['user_id'])) {
     <section class="page-section">
         <div class="container">
             <?php if (!empty($error)): ?>
-                <div class="alert alert-danger">
-                    <?= htmlspecialchars($error) ?>
-                    <?php if (!empty($validationErrors)): ?>
+                <?php if ($isModerationError): ?>
+                    <div class="moderation-alert">
+                        <div class="moderation-alert-icon"><i class="fas fa-shield-halved"></i></div>
+                        <div>
+                            <div class="moderation-alert-title">Modification refusee</div>
+                            <p class="moderation-alert-text">Le texte contient un contenu non autorise. Retirez les insultes, menaces ou elements de spam, puis reessayez.</p>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="alert alert-danger">
+                        <?= htmlspecialchars($error) ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!$isModerationError && !empty($displayValidationErrors)): ?>
+                    <div class="alert alert-danger">
                         <ul>
-                            <?php foreach ($validationErrors as $message): ?>
+                            <?php foreach ($displayValidationErrors as $message): ?>
                                 <li><?= htmlspecialchars($message) ?></li>
                             <?php endforeach; ?>
                         </ul>
-                    <?php endif; ?>
-                </div>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
 
             <div class="form-card">

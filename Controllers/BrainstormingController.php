@@ -230,6 +230,37 @@ class BrainstormingController
             return false;
         }
     }
+
+    public function listVisibleForUserWithFilters($userId = null, $isAdmin = false, $filters = [])
+    {
+        $brainstormings = $this->listAll();
+
+        if (!$isAdmin) {
+            $brainstormings = array_values(array_filter($brainstormings, function ($brainstorming) {
+                return (int) $brainstorming['accepted'] === 1;
+            }));
+        }
+
+        // Apply status filter
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $status = (int) $filters['status'];
+            $brainstormings = array_values(array_filter($brainstormings, function ($brainstorming) use ($status) {
+                return (int) $brainstorming['accepted'] === $status;
+            }));
+        }
+
+        // Apply search filter
+        if (isset($filters['search']) && $filters['search'] !== '') {
+            $searchTerm = strtolower($filters['search']);
+            $brainstormings = array_values(array_filter($brainstormings, function ($brainstorming) use ($searchTerm) {
+                $titre = strtolower($brainstorming['titre'] ?? '');
+                $description = strtolower($brainstorming['description'] ?? '');
+                return strpos($titre, $searchTerm) !== false || strpos($description, $searchTerm) !== false;
+            }));
+        }
+
+        return $brainstormings;
+    }
 }
 
 
