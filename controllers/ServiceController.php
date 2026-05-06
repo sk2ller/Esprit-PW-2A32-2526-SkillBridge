@@ -2,6 +2,8 @@
 require_once(__DIR__ . '/../config.php');
 require_once(__DIR__ . '/../models/Service.php');
 require_once(__DIR__ . '/../models/Categorie.php');
+require_once(__DIR__ . '/../services/BadwordModerationService.php');
+require_once(__DIR__ . '/../services/GeminiServiceGenerator.php');
 require_once(__DIR__ . '/CategorieController.php');
 
 class ServiceController
@@ -17,6 +19,19 @@ class ServiceController
         $columnCheck = $db->query("SHOW COLUMNS FROM services LIKE 'freelancer_name'");
         if ($columnCheck && $columnCheck->num_rows === 0) {
             $db->query("ALTER TABLE services ADD freelancer_name VARCHAR(120) NOT NULL DEFAULT 'Freelancer Demo' AFTER id_categorie");
+        }
+
+        $columns = [
+            'langue_detectee' => "ALTER TABLE services ADD langue_detectee VARCHAR(10) DEFAULT 'fr' AFTER thumbnail",
+            'description_fr' => "ALTER TABLE services ADD description_fr TEXT NULL AFTER langue_detectee",
+            'description_en' => "ALTER TABLE services ADD description_en TEXT NULL AFTER description_fr"
+        ];
+
+        foreach ($columns as $column => $sql) {
+            $columnCheck = $db->query("SHOW COLUMNS FROM services LIKE '{$column}'");
+            if ($columnCheck && $columnCheck->num_rows === 0) {
+                $db->query($sql);
+            }
         }
     }
 
@@ -65,6 +80,61 @@ class ServiceController
         return false;
     }
 
+    private function getUploadDir()
+    {
+        $uploadDir = __DIR__ . '/../views/assets/uploads/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        return $uploadDir;
+    }
+
+    private function getCategoryNameById($idCategorie)
+    {
+        $categorieController = new CategorieController();
+        $categorie = $categorieController->getCategorieById((int) $idCategorie);
+
+        return $categorie ? $categorie->getNom() : '';
+    }
+
+    private function getGeneratedThumbnailFromPost()
+    {
+        $fileName = basename($_POST['generated_thumbnail'] ?? '');
+        if ($fileName === '') {
+            return null;
+        }
+
+        $path = $this->getUploadDir() . $fileName;
+        return is_file($path) ? $fileName : null;
+    }
+
+    private function enrichServiceWithAi(Service $service, $competences = '', $generateImageIfMissing = true)
+    {
+        $generator = new GeminiServiceGenerator();
+        $translation = $generator->translateDescription($service->getDescription());
+
+        $service->setLangueDetectee($translation['langue_detectee'] ?? 'fr');
+        $service->setDescriptionFr($translation['description_fr'] ?? $service->getDescription());
+        $service->setDescriptionEn($translation['description_en'] ?? $service->getDescription());
+
+        if ($generateImageIfMissing && empty($service->getThumbnail())) {
+            $image = $generator->generateServiceImage(
+                $service->getTitre(),
+                $service->getDescription(),
+                $this->getCategoryNameById($service->getIdCategorie()),
+                $competences,
+                $this->getUploadDir()
+            );
+
+            if ($image) {
+                $service->setThumbnail($image);
+            }
+        }
+
+        return $service;
+    }
+
     private function validateService()
     {
         $errors = [];
@@ -85,6 +155,13 @@ class ServiceController
             $errors['description'] = 'La description est obligatoire.';
         } elseif (strlen($_POST['description']) < 20) {
             $errors['description'] = 'La description doit contenir au moins 20 caracteres.';
+        } else {
+            $moderationService = new BadwordModerationService();
+            $moderationResult = $moderationService->validateDescription($_POST['description']);
+
+            if (!$moderationResult['allowed']) {
+                $errors['description'] = 'La description contient des mots inappropries. Veuillez la corriger avant publication.';
+            }
         }
 
         if (empty($_POST['prix'] ?? '')) {
@@ -110,8 +187,8 @@ class ServiceController
 
     public function addService(Service $service)
     {
-        $sql = "INSERT INTO services (titre, description, prix, delai_livraison, statut, id_categorie, freelancer_name, thumbnail)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO services (titre, description, prix, delai_livraison, statut, id_categorie, freelancer_name, thumbnail, langue_detectee, description_fr, description_en)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $db = getDB();
 
         try {
@@ -130,8 +207,11 @@ class ServiceController
             $idCategorie = $service->getIdCategorie();
             $freelancerName = $service->getFreelancerName();
             $thumbnail = $service->getThumbnail();
+            $langueDetectee = $service->getLangueDetectee();
+            $descriptionFr = $service->getDescriptionFr();
+            $descriptionEn = $service->getDescriptionEn();
 
-            $query->bind_param('ssdisiss', $titre, $description, $prix, $delai, $statut, $idCategorie, $freelancerName, $thumbnail);
+            $query->bind_param('ssdisisssss', $titre, $description, $prix, $delai, $statut, $idCategorie, $freelancerName, $thumbnail, $langueDetectee, $descriptionFr, $descriptionEn);
 
             if (!$query->execute()) {
                 echo 'Execute Error: ' . $query->error;
@@ -233,7 +313,10 @@ class ServiceController
                     $result['freelancer_name'] ?? 'Freelancer Demo',
                     null,
                     null,
-                    $result['thumbnail'] ?? null
+                    $result['thumbnail'] ?? null,
+                    $result['langue_detectee'] ?? 'fr',
+                    $result['description_fr'] ?? null,
+                    $result['description_en'] ?? null
                 );
 
                 $service->setId($result['id_service']);
@@ -271,7 +354,7 @@ class ServiceController
     public function updateService(Service $service)
     {
         $sql = "UPDATE services
-                SET titre = ?, description = ?, prix = ?, delai_livraison = ?, statut = ?, id_categorie = ?, freelancer_name = ?, thumbnail = ?
+                SET titre = ?, description = ?, prix = ?, delai_livraison = ?, statut = ?, id_categorie = ?, freelancer_name = ?, thumbnail = ?, langue_detectee = ?, description_fr = ?, description_en = ?
                 WHERE id_service = ?";
         $db = getDB();
 
@@ -286,8 +369,11 @@ class ServiceController
             $idCategorie = $service->getIdCategorie();
             $freelancerName = $service->getFreelancerName();
             $thumbnail = $service->getThumbnail();
+            $langueDetectee = $service->getLangueDetectee();
+            $descriptionFr = $service->getDescriptionFr();
+            $descriptionEn = $service->getDescriptionEn();
 
-            $query->bind_param('ssdisissi', $titre, $description, $prix, $delai, $statut, $idCategorie, $freelancerName, $thumbnail, $id);
+            $query->bind_param('ssdisisssssi', $titre, $description, $prix, $delai, $statut, $idCategorie, $freelancerName, $thumbnail, $langueDetectee, $descriptionFr, $descriptionEn, $id);
             return $query->execute();
         } catch (Exception $e) {
             echo 'Error: ' . $e->getMessage();
@@ -485,7 +571,10 @@ class ServiceController
             'freelancer_name' => $serviceObject->getFreelancerName(),
             'nom_categorie' => $serviceObject->getNomCategorie(),
             'created_at' => $serviceObject->getCreatedAt(),
-            'thumbnail' => $serviceObject->getThumbnail()
+            'thumbnail' => $serviceObject->getThumbnail(),
+            'langue_detectee' => $serviceObject->getLangueDetectee(),
+            'description_fr' => $serviceObject->getDescriptionFr(),
+            'description_en' => $serviceObject->getDescriptionEn()
         ];
 
         require_once(__DIR__ . '/../views/FrontOffice/service_detail.php');
@@ -514,6 +603,9 @@ class ServiceController
 
             if (empty($errors)) {
                 $thumbnail = $this->uploadFile($_FILES['thumbnail'] ?? [], 'thumb', ['jpg', 'jpeg', 'png', 'webp']);
+                if ($thumbnail === null) {
+                    $thumbnail = $this->getGeneratedThumbnailFromPost();
+                }
 
                 $service = new Service(
                     htmlspecialchars($_POST['titre']),
@@ -528,6 +620,7 @@ class ServiceController
                     $thumbnail
                 );
 
+                $service = $this->enrichServiceWithAi($service, $_POST['competences_ai'] ?? '');
                 $this->addService($service);
                 header("Location: index.php?page=my_services&success=1");
                 exit;
@@ -543,6 +636,150 @@ class ServiceController
         }
 
         require_once(__DIR__ . '/../views/FrontOffice/service_form.php');
+    }
+
+    public function generateAiSuggestion()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Methode non autorisee.'
+            ]);
+            exit;
+        }
+
+        $competences = trim($_POST['competences'] ?? '');
+        $idCategorie = (int) ($_POST['id_categorie'] ?? 0);
+        $categorieName = '';
+
+        if ($idCategorie > 0) {
+            $categorieController = new CategorieController();
+            $categorie = $categorieController->getCategorieById($idCategorie);
+            if ($categorie) {
+                $categorieName = $categorie->getNom();
+            }
+        }
+
+        $generator = new GeminiServiceGenerator();
+        echo json_encode($generator->generateServiceOffer($competences, $categorieName));
+        exit;
+    }
+
+    public function generateAiImageSuggestion()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Methode non autorisee.'
+            ]);
+            exit;
+        }
+
+        $titre = trim($_POST['titre'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $competences = trim($_POST['competences'] ?? '');
+        $style = trim($_POST['image_style'] ?? 'modern');
+        $idCategorie = (int) ($_POST['id_categorie'] ?? 0);
+        $categorieName = $this->getCategoryNameById($idCategorie);
+
+        if ($titre === '' && $description === '' && $competences === '') {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Ajoutez un titre, une description ou des competences avant de generer une image.'
+            ]);
+            exit;
+        }
+
+        $generator = new GeminiServiceGenerator();
+        $image = $generator->generateServiceImage($titre, $description, $categorieName, $competences, $this->getUploadDir(), $style);
+
+        echo json_encode([
+            'success' => $image !== null,
+            'thumbnail' => $image,
+            'image_url' => $image ? 'views/assets/uploads/' . rawurlencode($image) : null,
+            'message' => $image ? 'Image generee avec succes.' : 'Generation image impossible pour le moment.'
+        ]);
+        exit;
+    }
+
+    public function translateServiceDescription()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Methode non autorisee.'
+            ]);
+            exit;
+        }
+
+        $description = trim($_POST['description'] ?? '');
+        if ($description === '') {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Veuillez saisir une description a traduire.'
+            ]);
+            exit;
+        }
+
+        $generator = new GeminiServiceGenerator();
+        $translation = $generator->translateDescription($description);
+
+        echo json_encode([
+            'success' => true,
+            'langue_detectee' => $translation['langue_detectee'] ?? 'fr',
+            'description_fr' => $translation['description_fr'] ?? $description,
+            'description_en' => $translation['description_en'] ?? $description,
+            'source' => $translation['source'] ?? 'local'
+        ]);
+        exit;
+    }
+
+    public function translateServiceForClient()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Methode non autorisee.'
+            ]);
+            exit;
+        }
+
+        $idService = (int) ($_POST['id_service'] ?? 0);
+        $service = $this->getServiceById($idService);
+
+        if (!$service) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Service introuvable.'
+            ]);
+            exit;
+        }
+
+        $generator = new GeminiServiceGenerator();
+        $translations = $generator->translateToAllLanguages($service->getDescription());
+
+        echo json_encode([
+            'success' => true,
+            'langue_detectee' => $translations['langue_detectee'] ?? 'fr',
+            'description_ar' => $translations['description_ar'] ?? $service->getDescription(),
+            'description_fr' => $translations['description_fr'] ?? $service->getDescription(),
+            'description_en' => $translations['description_en'] ?? $service->getDescription(),
+            'source' => $translations['source'] ?? 'local',
+            'api_configured' => defined('GEMINI_API_KEY') && GEMINI_API_KEY !== ''
+        ]);
+        exit;
     }
 
     public function edit($id)
@@ -579,7 +816,7 @@ class ServiceController
                 if ($thumbnail === false) {
                     $errors['thumbnail'] = 'Le fichier miniature doit etre en format JPG, JPEG, PNG ou WEBP.';
                 } elseif ($thumbnail === null) {
-                    $thumbnail = $serviceObject->getThumbnail();
+                    $thumbnail = $this->getGeneratedThumbnailFromPost() ?: $serviceObject->getThumbnail();
                 }
 
                 if (empty($errors)) {
@@ -597,6 +834,7 @@ class ServiceController
                     );
 
                     $updatedService->setId($id);
+                    $updatedService = $this->enrichServiceWithAi($updatedService, $_POST['competences_ai'] ?? '', empty($_FILES['thumbnail']['name'] ?? ''));
                     $this->updateService($updatedService);
 
                     header("Location: index.php?page=my_services&success=2");

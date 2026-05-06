@@ -22,6 +22,219 @@ function setFirstError(currentError, message) {
     return currentError || message;
 }
 
+function setAiStatus(message, isError) {
+    const status = document.getElementById('aiGenerationStatus');
+    if (!status) {
+        return;
+    }
+
+    status.textContent = message;
+    status.style.color = isError ? '#ef4444' : 'var(--text-muted)';
+}
+
+function applyAiSuggestion(data) {
+    const titre = document.getElementById('titre');
+    const description = document.getElementById('description');
+    const prix = document.getElementById('prix');
+    const priceBox = document.getElementById('aiPriceSuggestion');
+    const priceText = document.getElementById('aiSuggestedPrice');
+
+    if (titre && data.titre) {
+        titre.value = data.titre;
+    }
+
+    if (description && data.description) {
+        description.value = data.description;
+    }
+
+    if (prix && data.prix_suggere) {
+        prix.value = data.prix_suggere;
+    }
+
+    if (priceBox && priceText && data.prix_suggere) {
+        priceText.textContent = data.prix_suggere;
+        priceBox.style.display = 'block';
+    }
+}
+
+function initAiGeneration() {
+    const button = document.getElementById('generateAiService');
+    const competences = document.getElementById('competences_ai');
+    const categorie = document.getElementById('id_categorie');
+
+    if (!button || !competences || !categorie) {
+        return;
+    }
+
+    button.addEventListener('click', function () {
+        const skills = competences.value.trim();
+
+        if (skills === '') {
+            showSweetAlert('Veuillez saisir vos competences avant de generer le service.');
+            return;
+        }
+
+        button.disabled = true;
+        setAiStatus('Generation en cours...', false);
+
+        const formData = new FormData();
+        formData.append('competences', skills);
+        formData.append('id_categorie', categorie.value);
+
+        fetch('index.php?page=generate_service_ai', {
+            method: 'POST',
+            body: formData
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (!data.success) {
+                    throw new Error(data.message || 'Generation impossible pour le moment.');
+                }
+
+                applyAiSuggestion(data);
+                setAiStatus(data.source === 'gemini' ? 'Suggestion generee avec Gemini.' : 'Suggestion generee localement.', false);
+            })
+            .catch((error) => {
+                setAiStatus(error.message, true);
+                showSweetAlert(error.message);
+            })
+            .finally(() => {
+                button.disabled = false;
+            });
+    });
+}
+
+function initAiImageGeneration() {
+    const button = document.getElementById('generateAiImage');
+    const competences = document.getElementById('competences_ai');
+    const categorie = document.getElementById('id_categorie');
+    const titre = document.getElementById('titre');
+    const description = document.getElementById('description');
+    const hiddenThumbnail = document.getElementById('generated_thumbnail');
+    const previewBox = document.getElementById('aiImagePreview');
+    const previewImage = document.getElementById('aiGeneratedImagePreview');
+    const status = document.getElementById('aiImageStatus');
+    const imageStyle = document.getElementById('aiImageStyle');
+
+    if (!button || !hiddenThumbnail) {
+        return;
+    }
+
+    button.addEventListener('click', function () {
+        button.disabled = true;
+        if (status) {
+            status.textContent = 'Generation image en cours...';
+            status.style.color = 'var(--text-muted)';
+        }
+
+        const formData = new FormData();
+        formData.append('titre', titre ? titre.value.trim() : '');
+        formData.append('description', description ? description.value.trim() : '');
+        formData.append('competences', competences ? competences.value.trim() : '');
+        formData.append('id_categorie', categorie ? categorie.value : '');
+        formData.append('image_style', imageStyle ? imageStyle.value : 'modern');
+
+        fetch('index.php?page=generate_service_image_ai', {
+            method: 'POST',
+            body: formData
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (!data.success) {
+                    throw new Error(data.message || 'Generation image impossible pour le moment.');
+                }
+
+                hiddenThumbnail.value = data.thumbnail;
+                if (previewBox && previewImage) {
+                    previewImage.src = data.image_url;
+                    previewBox.style.display = 'block';
+                }
+                if (status) {
+                    status.textContent = 'Image IA generee et prete a etre utilisee.';
+                    status.style.color = 'var(--text-muted)';
+                }
+            })
+            .catch((error) => {
+                if (status) {
+                    status.textContent = error.message;
+                    status.style.color = '#ef4444';
+                }
+                showSweetAlert(error.message);
+            })
+            .finally(() => {
+                button.disabled = false;
+            });
+    });
+}
+
+function initAiTranslation() {
+    const button = document.getElementById('translateAiDescription');
+    const description = document.getElementById('description');
+    const status = document.getElementById('aiTranslationStatus');
+    const preview = document.getElementById('translationPreview');
+    const translationFr = document.getElementById('translationFr');
+    const translationEn = document.getElementById('translationEn');
+
+    if (!button || !description) {
+        return;
+    }
+
+    button.addEventListener('click', function () {
+        const text = description.value.trim();
+
+        if (text === '') {
+            showSweetAlert('Veuillez saisir une description a traduire.');
+            return;
+        }
+
+        button.disabled = true;
+        if (status) {
+            status.textContent = 'Traduction en cours...';
+            status.style.color = 'var(--text-muted)';
+        }
+
+        const formData = new FormData();
+        formData.append('description', text);
+
+        fetch('index.php?page=translate_service_ai', {
+            method: 'POST',
+            body: formData
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (!data.success) {
+                    throw new Error(data.message || 'Traduction impossible pour le moment.');
+                }
+
+                if (translationFr) {
+                    translationFr.textContent = data.description_fr;
+                }
+                if (translationEn) {
+                    translationEn.textContent = data.description_en;
+                }
+                if (preview) {
+                    preview.style.display = 'block';
+                }
+                if (status) {
+                    status.textContent = data.source === 'gemini'
+                        ? 'Description traduite avec Gemini.'
+                        : 'Langue detectee: ' + data.langue_detectee + '. Configurez GEMINI_API_KEY pour une vraie traduction IA.';
+                    status.style.color = 'var(--text-muted)';
+                }
+            })
+            .catch((error) => {
+                if (status) {
+                    status.textContent = error.message;
+                    status.style.color = '#ef4444';
+                }
+                showSweetAlert(error.message);
+            })
+            .finally(() => {
+                button.disabled = false;
+            });
+    });
+}
+
 function validateServiceForm() {
     const titre = document.getElementById('titre').value.trim();
     const description = document.getElementById('description').value.trim();
@@ -133,6 +346,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!form) {
         return;
+    }
+
+    initAiGeneration();
+    initAiImageGeneration();
+    initAiTranslation();
+
+    if (thumbnailInput) {
+        thumbnailInput.addEventListener('change', function () {
+            const generatedThumbnail = document.getElementById('generated_thumbnail');
+            if (generatedThumbnail && thumbnailInput.files.length > 0) {
+                generatedThumbnail.value = '';
+            }
+        });
     }
 
     ['titre', 'description', 'prix', 'delai_livraison', 'id_categorie'].forEach((fieldId) => {

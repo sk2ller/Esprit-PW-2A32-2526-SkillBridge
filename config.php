@@ -3,6 +3,11 @@ define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'services_platform');
+define('GEMINI_API_KEY', getenv('GEMINI_API_KEY') ?: '');
+define('STRIPE_PUBLIC_KEY', getenv('STRIPE_PUBLIC_KEY') ?: '');
+define('STRIPE_SECRET_KEY', getenv('STRIPE_SECRET_KEY') ?: '');
+define('STRIPE_CURRENCY', 'eur');
+define('STRIPE_DT_TO_PAYMENT_RATE', 0.30);
 define('BASE_URL', 'http://localhost/project/');
 define('USE_MOCK_DATA', false); // Utiliser la base de données MySQL réelle
 

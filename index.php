@@ -4,7 +4,8 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/controllers/ServiceController.php';
 require_once __DIR__ . '/controllers/CategorieController.php';
 require_once __DIR__ . '/controllers/ChatController.php';
-require_once __DIR__ . '/controllers/AdminReportController.php';
+require_once __DIR__ . '/controllers/ExportPdfController.php';
+require_once __DIR__ . '/controllers/PaymentController.php';
 
 $page = $_GET['page'] ?? 'home';
 $role = $_GET['role'] ?? 'client';
@@ -14,6 +15,7 @@ $serviceCtrl = new ServiceController();
 $categorieCtrl = new CategorieController();
 $chatCtrl = new ChatController();
 $adminReportCtrl = new AdminReportController();
+$paymentCtrl = new PaymentController();
 
 // Set role in session
 if (isset($_GET['role'])) {
@@ -38,6 +40,12 @@ switch ($page) {
     case 'chat_messages':
         $chatCtrl->messagesJson($_GET['conversation_id'] ?? 0);
         break;
+    case 'stripe_checkout':
+        $paymentCtrl->checkout($id);
+        break;
+    case 'payment_success':
+        $paymentCtrl->success($id);
+        break;
 
     // Freelancer
     case 'my_services':
@@ -45,6 +53,18 @@ switch ($page) {
         break;
     case 'create_service':
         $serviceCtrl->create();
+        break;
+    case 'generate_service_ai':
+        $serviceCtrl->generateAiSuggestion();
+        break;
+    case 'generate_service_image_ai':
+        $serviceCtrl->generateAiImageSuggestion();
+        break;
+    case 'translate_service_ai':
+        $serviceCtrl->translateServiceDescription();
+        break;
+    case 'client_translate_service':
+        $serviceCtrl->translateServiceForClient();
         break;
     case 'edit_service':
         $serviceCtrl->edit($id);

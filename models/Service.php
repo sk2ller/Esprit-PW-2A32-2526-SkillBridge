@@ -15,6 +15,9 @@ class Service
     private $cv;
     private $portfolio;
     private $thumbnail;
+    private $langue_detectee;
+    private $description_fr;
+    private $description_en;
 
 
     public function __construct(
@@ -27,7 +30,10 @@ class Service
         $freelancer_name = 'Freelancer Demo',
         $cv = null,
         $portfolio = null,
-        $thumbnail = null
+        $thumbnail = null,
+        $langue_detectee = 'fr',
+        $description_fr = null,
+        $description_en = null
     ) {
         $this->titre = $titre;
         $this->description = $description;
@@ -39,6 +45,9 @@ class Service
         $this->cv = $cv;
         $this->portfolio = $portfolio;
         $this->thumbnail = $thumbnail;
+        $this->langue_detectee = $langue_detectee;
+        $this->description_fr = $description_fr;
+        $this->description_en = $description_en;
     }
 
     public function getId()                      { return $this->id_service; }
@@ -79,4 +88,13 @@ class Service
 
     public function getThumbnail()               { return $this->thumbnail; }
     public function setThumbnail($thumbnail)     { $this->thumbnail = $thumbnail; }
+
+    public function getLangueDetectee()          { return $this->langue_detectee; }
+    public function setLangueDetectee($langue)   { $this->langue_detectee = $langue; }
+
+    public function getDescriptionFr()           { return $this->description_fr; }
+    public function setDescriptionFr($d)         { $this->description_fr = $d; }
+
+    public function getDescriptionEn()           { return $this->description_en; }
+    public function setDescriptionEn($d)         { $this->description_en = $d; }
 }

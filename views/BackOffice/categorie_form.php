@@ -48,7 +48,7 @@ $icones = [
           <?= $isEdit ? '✏️ Modifier la catégorie' : '✨ Nouvelle catégorie' ?>
         </h2>
 
-        <form method="POST">
+        <form method="POST" id="categoryForm">
           <div class="form-group">
             <label class="form-label">Nom de la catégorie <span style="color:#ef4444">*</span></label>
             <input type="text" id="nom_categorie" name="nom_categorie" class="form-control"
@@ -79,7 +79,7 @@ $icones = [
             <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:10px;">
               <?php foreach ($icones as $cls => $label): ?>
               <label style="cursor:pointer;">
-                <input type="radio" name="icone" value="<?= $cls ?>" id="icone"
+                <input type="radio" name="icone" value="<?= $cls ?>"
                   <?= (($categorie['icone'] ?? 'fas fa-folder') === $cls) ? 'checked' : '' ?>
                   style="display:none;" class="icone-radio" id="ico_<?= md5($cls) ?>">
                 <div onclick="selectIcon('<?= $cls ?>')"
@@ -138,5 +138,19 @@ function selectIcon(cls) {
 $scriptFile = $isEdit ? 'edit_categ.js' : 'add_categ.js';
 echo '<script src="views/assets/js/' . $scriptFile . '"></script>';
 ?>
+<script>
+<?php if (!empty($error) || !empty($errors)): ?>
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({
+      icon: 'error',
+      title: 'Formulaire invalide',
+      text: <?= json_encode(!empty($error) ? $error : reset($errors)) ?>,
+      confirmButtonColor: '#f07c22'
+    });
+  }
+});
+<?php endif; ?>
+</script>
 
 <?php include __DIR__ . '/footer.php'; ?>
