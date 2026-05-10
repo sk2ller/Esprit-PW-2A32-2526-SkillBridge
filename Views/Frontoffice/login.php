@@ -32,6 +32,7 @@ function completeSkillBridgeLogin($user, $userController)
     $_SESSION['user_email'] = $user->getEmail();
     $_SESSION['user_role'] = $user->getIdRole();
     $_SESSION['jwt'] = $jwt;
+    $_SESSION['show_welcome_assistant'] = 1;
     unset($_SESSION['pending_2fa_user_id'], $_SESSION['pending_2fa_email']);
 
     $userController->recordLoginSuccess($user->getIdUser());
@@ -102,6 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'verif
         $_SESSION['user_email'] = $faceUser['email'];
         $_SESSION['user_role'] = $faceUser['id_role'];
         $_SESSION['jwt'] = $jwt;
+        $_SESSION['show_welcome_assistant'] = 1;
         setcookie('jwt', $jwt, time() + 86400, '/', '', false, true);
         $userController->recordLoginSuccess($faceUser['id']);
         $userController->logSecurityEvent($faceUser['id'], $faceUser['email'], 'face_login_success', 'success', 'Distance: ' . number_format($distance, 2));
