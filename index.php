@@ -41,8 +41,24 @@ switch ($request) {
         require __DIR__ . '/Views/Frontoffice/register.php';
         break;
 
+    case 'projects':
+        require __DIR__ . '/Views/Frontoffice/projects.php';
+        break;
+
+    case 'paiement':
+        require __DIR__ . '/Views/Frontoffice/paiement.php';
+        break;
+
     case 'profile':
         require __DIR__ . '/Views/Frontoffice/profile.php';
+        break;
+
+    case 'mes_projets':
+        require __DIR__ . '/Views/Frontoffice/mes_projets.php';
+        break;
+
+    case 'mes_projets_client':
+        require __DIR__ . '/Views/Frontoffice/mes_projets_client.php';
         break;
 
     case 'myrating':
@@ -184,6 +200,26 @@ switch ($request) {
 
     case 'userlist':
         require __DIR__ . '/Views/Backoffice/userList.php';
+        break;
+
+    case 'dashboard':
+        require __DIR__ . '/Views/Backoffice/dashboard.php';
+        break;
+
+    case 'projectlist':
+        require __DIR__ . '/Views/Backoffice/projectList.php';
+        break;
+
+    case 'candidatures':
+        require __DIR__ . '/Views/Backoffice/candidatures.php';
+        break;
+
+    case 'adduser':
+        require __DIR__ . '/Views/Backoffice/addUser.php';
+        break;
+
+    case 'edituser':
+        require __DIR__ . '/Views/Backoffice/editUser.php';
         break;
 
     case 'statistics':
