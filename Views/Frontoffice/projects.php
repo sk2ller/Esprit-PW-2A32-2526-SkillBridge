@@ -281,7 +281,9 @@ function formatStatusLabel($status)
     <title>Projets Freelance - SkillBridge</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="<?= BASE_URL ?>/Views/assets/css/skillbridge.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="/Views/assets/css/skillbridge-front.css">
+    <link rel="stylesheet" href="/Views/assets/css/skillbridge.css">
     <style>
         .projects-layout {
             padding: 3rem 1.5rem 5rem;
@@ -647,37 +649,8 @@ function formatStatusLabel($status)
         .chat-empty { text-align: center; color: #9ca3af; font-size: 0.85rem; padding: 2rem 0; }
     </style>
 </head>
-<body class="has-sidebar">
-<?php require __DIR__ . '/partials/sidebar.php'; ?>
-<nav class="navbar-top">
-    <div class="container" style="display:flex;align-items:center;justify-content:space-between;">
-        <button class="sb-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
-        <div class="nav-buttons" style="display:flex;align-items:center;gap:0.5rem;margin-left:auto;">
-            <?php if (isset($_SESSION['user_id']) && in_array((int)$_SESSION['user_role'], [2,3])): ?>
-            <div class="notif-bell-wrap" id="notifBellWrap">
-                <button class="notif-bell-btn" onclick="toggleNotifDropdown()" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="notif-count" id="notifCount" style="display:none;">0</span>
-                </button>
-                <div class="notif-dropdown" id="notifDropdown" style="display:none;">
-                    <div class="notif-header">
-                        <span>Notifications</span>
-                        <button class="notif-clear-btn" onclick="marquerToutLu()">Tout marquer lu</button>
-                    </div>
-                    <div class="notif-list" id="notifList">
-                        <div class="notif-empty">Aucune nouvelle notification</div>
-                    </div>
-                </div>
-            </div>
-            <?php endif; ?>
-            <?php if (!isset($_SESSION['user_id'])): ?>
-                <a href="?action=login" class="btn btn-secondary">Connexion</a>
-                <a href="?action=register" class="btn btn-primary">S'inscrire</a>
-            <?php endif; ?>
-        </div>
-    </div>
-</nav>
-
+<body class="skillbridge-front">
+<?php include __DIR__ . '/partials/front_navbar.php'; ?>
 <main class="projects-layout">
     <div class="projects-header">
         <div class="projects-title-row">

@@ -1,29 +1,46 @@
-# Gestion Bibliothèque
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:2A2A2E,100:EA7322&height=200&section=header&text=SkillBridge&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Learn%20%E2%86%92%20Build%20%E2%86%92%20Earn&descAlignY=55&descSize=18" />
+</p>
 
-Projet PHP MVC - Gestion de livres et catégories
+<p align="center">
+  <img src="https://img.shields.io/badge/status-in%20development-3A3A3E?style=for-the-badge&logoColor=FDF4E6"/>
+  <img src="https://img.shields.io/badge/platform-freelancing-EA7322?style=for-the-badge&logoColor=FDF4E6"/>
+  <img src="https://img.shields.io/badge/model-learn%20%2B%20earn-F2913C?style=for-the-badge&logoColor=2A2A2E"/>
+</p>
 
-## Technologies
-- PHP (MVC)
-- MySQL / phpMyAdmin
-- Bootstrap 5
+<p align="center">
+  <img src="https://github-readme-stats.vercel.app/api?username=sk2ller&show_icons=true&theme=tokyonight&hide_border=true"/>
+  <img src="https://github-readme-streak-stats.herokuapp.com/?user=sk2ller&theme=tokyonight&hide_border=true"/>
+</p>
 
-## Structure
-- Models : Category, Book
-- Controllers : CategoryController, BookController
-- Views : BackOffice (CRUD admin), FrontOffice (catalogue public)
+## Overview
 
-## Installation
+SkillBridge is built to remove the gap between learning and earning.
 
-### 1. Base de données
-Importer le fichier `projetweb.sql` dans phpMyAdmin
+Instead of spending months preparing, users can start immediately — learning a skill and applying it in real situations at the same time.
 
-### 2. Configuration
-Dans `config.php`, vérifier les paramètres :
-- host : localhost
-- username : root
-- password : (vide par défaut XAMPP)
-- dbname : projetweb
+A direct path from knowledge to income.
 
-### 3. Lancer le projet
-Démarrer Apache via XAMPP puis ouvrir :
-http://localhost/projet/
++ Learn what matters
++ Apply instantly
++ Earn while improving
+
+- Courses focused on real freelancing skills  
+- Built-in marketplace to offer services  
+- Real client experience from day one  
+- Smooth growth from beginner to professional
+
+> You don’t need to be ready.  
+> You need to start.
+
+SkillBridge is built for action.
+
+<p align="center">
+  <img src="https://readme-typing-svg.herokuapp.com/?lines=Learn+skills;Apply+them+instantly;Earn+in+real+time;Grow+without+limits&center=true&size=22&color=EA7322">
+</p>
+
+## Final
+
+SkillBridge is not just a platform.
+
+It’s a system where skills become real opportunities.

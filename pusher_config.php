@@ -1,9 +1,9 @@
 <?php
 // ── Configuration Pusher ──────────────────────────────────────────────
-define('PUSHER_APP_ID',  '2150126');
-define('PUSHER_KEY',     '43b4440459346a92371d');
-define('PUSHER_SECRET',  '5a11530183601326ffd8');
-define('PUSHER_CLUSTER', 'eu');
+define('PUSHER_APP_ID',  trim((string) getenv('PUSHER_APP_ID')));
+define('PUSHER_KEY',     trim((string) getenv('PUSHER_KEY')));
+define('PUSHER_SECRET',  trim((string) getenv('PUSHER_SECRET')));
+define('PUSHER_CLUSTER', trim((string) getenv('PUSHER_CLUSTER')) !== '' ? trim((string) getenv('PUSHER_CLUSTER')) : 'eu');
 
 /**
  * Envoie un événement Pusher via l'API HTTP (sans SDK)
@@ -14,6 +14,10 @@ function pusherTrigger($channel, $event, $data)
     $key     = PUSHER_KEY;
     $secret  = PUSHER_SECRET;
     $cluster = PUSHER_CLUSTER;
+
+    if ($appId === '' || $key === '' || $secret === '') {
+        return false;
+    }
 
     $host      = "api-{$cluster}.pusher.com";
     $path      = "/apps/{$appId}/events";

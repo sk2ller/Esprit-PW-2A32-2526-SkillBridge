@@ -175,531 +175,296 @@ function badgeStatusClass($status) {
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Projets - SkillBridge Admin</title>
-    <script src="<?= BASE_URL ?>/Views/assets/js/plugin/webfont/webfont.min.js"></script>
-    <script>
-        WebFont.load({
-            google: { families: ["Public Sans:300,400,500,600,700"] },
-            custom: { families: ["Font Awesome 5 Solid","Font Awesome 5 Regular","Font Awesome 5 Brands","simple-line-icons"], urls: ["<?= BASE_URL ?>/Views/assets/css/fonts.min.css"] },
-            active: function() { sessionStorage.fonts = true; }
-        });
-    </script>
-    <link rel="stylesheet" href="<?= BASE_URL ?>/Views/assets/css/bootstrap.min.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>/Views/assets/css/plugins.min.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>/Views/assets/css/kaiadmin.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/Views/assets/css/skillbridge-admin.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap">
     <style>
-        .sidebar { transition: transform 0.3s ease, width 0.3s ease; }
-        .wrapper.sidebar-hidden .sidebar { display: none; }
-        .wrapper .main-panel { transition: margin-left 0.3s ease, width 0.3s ease; }
-        .wrapper.sidebar-hidden .main-panel { margin-left: 0 !important; width: 100% !important; }
-        .show-sidebar-btn {
-            display: block;
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1050;
-        }
-        .wrapper:not(.sidebar-hidden) .show-sidebar-btn { display: none !important; }
-        .toggle-sidebar { cursor: pointer; }
-        @media (min-width: 992px) {
-            .show-sidebar-btn { display: none; }
-            .wrapper.sidebar-hidden .show-sidebar-btn { display: block; }
-        }
-        .stats-card { border-radius: 14px; background: #fff; }
-        .project-description {
-            max-width: 200px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .invalid-feedback { display: none; }
-        .is-invalid ~ .invalid-feedback,
-        .is-invalid + .invalid-feedback { display: block; }
-        .is-invalid { border-color: #dc3545 !important; }
-        .is-valid { border-color: #198754 !important; }
+        .project-desc-cell { max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     </style>
 </head>
-<body>
-<div class="wrapper" id="wrapper">
+<body class="skillbridge-admin">
+<div class="admin-layout">
+    <?php include __DIR__ . '/sidebar.php'; ?>
 
-    <!-- Sidebar -->
-    <div class="sidebar" data-background-color="dark">
-        <div class="sidebar-logo">
-            <div class="logo-header" data-background-color="dark">
-                <a href="?action=home" class="logo">
-                    <img src="<?= BASE_URL ?>/Views/assets/img/logo1.png" alt="SkillBridge" style="height:30px;width:auto;">
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <div class="topbar-title">Gestion des Projets</div>
+                <div class="topbar-bread">Vue d ensemble et gestion complete des projets</div>
+            </div>
+            <div class="topbar-actions">
+                <a class="topbar-btn topbar-btn-outline" href="?action=projectlist&export=pdf&q=<?= urlencode($search) ?>">
+                    <i class="fas fa-file-export"></i> Export PDF
                 </a>
-                <div class="nav-toggle">
-                    <button class="btn btn-toggle toggle-sidebar"><i class="gg-menu-right"></i></button>
-                    <button class="btn btn-toggle sidenav-toggler"><i class="gg-menu-left"></i></button>
-                </div>
+                <button class="topbar-btn topbar-btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                    <i class="fas fa-plus"></i> Ajouter Projet
+                </button>
             </div>
         </div>
-        <div class="sidebar-wrapper scrollbar scrollbar-inner">
-            <div class="sidebar-content">
-                <ul class="nav nav-secondary">
-                    <li class="nav-section"><h4 class="text-section">Menu</h4></li>
-                    <li class="nav-item">
-                        <a href="?action=userlist">
-                            <i class="fas fa-users"></i>
-                            <p>Utilisateurs</p>
-                        </a>
-                    </li>
-                    <li class="nav-item active">
-                        <a href="?action=projectlist">
-                            <i class="fas fa-briefcase"></i>
-                            <p>Projets</p>
-                        </a>
-                    </li>
-                    <li class="nav-section"><h4 class="text-section">Compte</h4></li>
-                    <li class="nav-item">
-                        <a href="?action=logout">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <p>Déconnexion</p>
-                        </a>
-                    </li>
-                </ul>
+
+        <!-- STATS CARDS -->
+        <div class="stats-grid">
+            <div class="stat-widget purple">
+                <div class="sw-icon"><i class="fas fa-diagram-project"></i></div>
+                <div class="sw-value"><?= (int)$stats['total'] ?></div>
+                <div class="sw-label">Total Projets</div>
+            </div>
+            <div class="stat-widget green">
+                <div class="sw-icon"><i class="fas fa-users"></i></div>
+                <div class="sw-value"><?= (int)$statsUsers['total'] ?></div>
+                <div class="sw-label">Utilisateurs</div>
+            </div>
+            <div class="stat-widget orange">
+                <div class="sw-icon"><i class="fas fa-tasks"></i></div>
+                <div class="sw-value"><?= (int)$statsTaches['total'] ?></div>
+                <div class="sw-label">Tâches</div>
+            </div>
+            <div class="stat-widget blue">
+                <div class="sw-icon"><i class="fas fa-coins"></i></div>
+                <div class="sw-value"><?= number_format((float)$stats['budget_total'], 0, ',', ' ') ?></div>
+                <div class="sw-label">TND budget total</div>
             </div>
         </div>
-    </div>
-    <!-- End Sidebar -->
 
-    <!-- Main Panel -->
-    <div class="main-panel">
-
-        <!-- Navbar -->
-        <nav class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bottom">
-            <div class="container-fluid">
-                <div class="navbar-header">
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
+        <!-- CHARTS -->
+        <div class="admin-charts-row" style="display:grid;grid-template-columns:2fr 1fr;gap:1.25rem;margin-bottom:1.5rem;">
+            <section class="admin-card" style="padding:1.25rem;">
+                <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#7c3aed;margin-bottom:1rem;">
+                    <i class="fas fa-chart-bar" style="margin-right:.4rem;"></i>Projets créés (6 derniers mois)
                 </div>
-                <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
-                    <li class="nav-item">
-                        <span class="nav-link" style="color:#2c3e50;">👤 <?= htmlspecialchars($_SESSION['user_prenom'] ?? '') ?></span>
-                    </li>
-                    <li class="nav-item">
-                        <a href="?action=logout" class="nav-link" title="Déconnexion">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </a>
-                    </li>
-                </ul>
+                <canvas id="chartProjets" height="90"></canvas>
+            </section>
+            <section class="admin-card" style="padding:1.25rem;">
+                <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#10b981;margin-bottom:1rem;">
+                    <i class="fas fa-chart-pie" style="margin-right:.4rem;"></i>Candidatures
+                </div>
+                <canvas id="chartCandidatures" height="160"></canvas>
+            </section>
+        </div>
+
+        <!-- PROJETS EN ATTENTE DE VALIDATION -->
+        <?php if (!empty($pendingProjects)): ?>
+        <section class="admin-card" style="margin-bottom:1.5rem;border-left:4px solid #f59e0b;">
+            <div class="admin-table-header">
+                <div class="admin-table-title" style="color:#f59e0b;">
+                    <i class="fas fa-clock" style="margin-right:.5rem;"></i>
+                    En attente de validation
+                    <span class="badge-pending" style="margin-left:.5rem;"><?= count($pendingProjects) ?></span>
+                </div>
             </div>
-        </nav>
+            <table class="admin-table">
+                <thead>
+                    <tr><th>Titre</th><th>Description</th><th>Budget</th><th>Date</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                <?php foreach ($pendingProjects as $p): ?>
+                    <tr id="pending-row-<?= $p->getId() ?>">
+                        <td><?= htmlspecialchars($p->getTitre()) ?></td>
+                        <td class="project-desc-cell" title="<?= htmlspecialchars($p->getDescription()) ?>"><?= htmlspecialchars($p->getDescription()) ?></td>
+                        <td><?= number_format((float)$p->getBudget(), 2, ',', ' ') ?> TND</td>
+                        <td><?= htmlspecialchars($p->getDateCreation()) ?></td>
+                        <td>
+                            <div class="admin-stack-actions">
+                                <button class="admin-btn admin-btn-success admin-btn-sm" onclick="validerProjet(<?= $p->getId() ?>, 'accepter')"><i class="fas fa-check"></i> Accepter</button>
+                                <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="validerProjet(<?= $p->getId() ?>, 'refuser')"><i class="fas fa-times"></i> Refuser</button>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </section>
+        <?php endif; ?>
 
-        <!-- Show Sidebar Button -->
-        <button class="btn btn-outline-secondary show-sidebar-btn" id="showSidebarBtn" title="Afficher la barre latérale">
-            <i class="fas fa-bars"></i>
-        </button>
-
-        <!-- Page Content -->
-        <div class="container">
-            <div class="page-inner">
-                <div class="page-header">
-                    <h4 class="page-title">Gestion des Projets</h4>
-                </div>
-
-                <!-- STATS SECTION -->
-                <div class="row g-3 mb-3">
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="card border-0 shadow-sm h-100" style="border-radius:14px;background:#fff;">
-                            <div class="card-body p-3">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <p class="text-uppercase fw-bold mb-0" style="font-size:.7rem;letter-spacing:.07em;color:#6b7280;">Total Projets</p>
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:#ede9fe;"><i class="fas fa-folder-open" style="color:#7c3aed;font-size:.85rem;"></i></div>
-                                </div>
-                                <h2 class="fw-bold mb-0" style="font-size:1.8rem;color:#1e1b4b;"><?= (int)$stats['total'] ?></h2>
-                                <small class="text-muted"><?= (int)$stats['en_attente_validation'] ?> en attente validation</small>
-                                <hr class="my-2" style="border-color:#f0eeff;">
-                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">En cours</span><span class="fw-bold" style="color:#f59e0b;"><?= (int)$stats['en_cours'] ?></span></div>
-                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Terminés</span><span class="fw-bold" style="color:#10b981;"><?= (int)$stats['termine'] ?></span></div>
-                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">En attente</span><span class="fw-bold" style="color:#9ca3af;"><?= (int)$stats['en_attente'] ?></span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="card border-0 shadow-sm h-100" style="border-radius:14px;background:#fff;">
-                            <div class="card-body p-3">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <p class="text-uppercase fw-bold mb-0" style="font-size:.7rem;letter-spacing:.07em;color:#6b7280;">Utilisateurs</p>
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:#dcfce7;"><i class="fas fa-users" style="color:#10b981;font-size:.85rem;"></i></div>
-                                </div>
-                                <h2 class="fw-bold mb-0" style="font-size:1.8rem;color:#1e1b4b;"><?= (int)$statsUsers['total'] ?></h2>
-                                <small class="text-muted">inscrits</small>
-                                <hr class="my-2" style="border-color:#f0eeff;">
-                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Clients</span><span class="fw-bold" style="color:#7c3aed;"><?= (int)$statsUsers['clients'] ?></span></div>
-                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Freelancers</span><span class="fw-bold" style="color:#f59e0b;"><?= (int)$statsUsers['freelancers'] ?></span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="card border-0 shadow-sm h-100" style="border-radius:14px;background:#fff;">
-                            <div class="card-body p-3">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <p class="text-uppercase fw-bold mb-0" style="font-size:.7rem;letter-spacing:.07em;color:#6b7280;">Tâches</p>
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:#fef3c7;"><i class="fas fa-tasks" style="color:#f59e0b;font-size:.85rem;"></i></div>
-                                </div>
-                                <h2 class="fw-bold mb-0" style="font-size:1.8rem;color:#1e1b4b;"><?= (int)$statsTaches['total'] ?></h2>
-                                <small class="text-muted"><?= number_format((float)$statsTaches['total_prix'],2,',',' ') ?> TND alloués</small>
-                                <hr class="my-2" style="border-color:#f0eeff;">
-                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">À faire</span><span class="fw-bold" style="color:#9ca3af;"><?= (int)$statsTaches['a_faire'] ?></span></div>
-                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">En cours</span><span class="fw-bold" style="color:#f59e0b;"><?= (int)$statsTaches['en_cours'] ?></span></div>
-                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Terminées</span><span class="fw-bold" style="color:#10b981;"><?= (int)$statsTaches['terminees'] ?></span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="card border-0 shadow-sm h-100" style="border-radius:14px;background:#fff;">
-                            <div class="card-body p-3">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <p class="text-uppercase fw-bold mb-0" style="font-size:.7rem;letter-spacing:.07em;color:#6b7280;">Finances</p>
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:#dbeafe;"><i class="fas fa-coins" style="color:#3b82f6;font-size:.85rem;"></i></div>
-                                </div>
-                                <h2 class="fw-bold mb-0" style="font-size:1.8rem;color:#1e1b4b;"><?= number_format((float)$stats['budget_total'],0,',',' ') ?></h2>
-                                <small class="text-muted">TND budget total</small>
-                                <hr class="my-2" style="border-color:#f0eeff;">
-                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Tâches payées</span><span class="fw-bold" style="color:#10b981;"><?= (int)$statsPaiements['total_payees'] ?></span></div>
-                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Montant payé</span><span class="fw-bold" style="color:#10b981;"><?= number_format((float)$statsPaiements['montant_paye'],2,',',' ') ?> TND</span></div>
-                                <div class="d-flex justify-content-between" style="font-size:.78rem;"><span class="text-muted">Candidatures</span><span class="fw-bold" style="color:#7c3aed;"><?= (int)$statsCands['total'] ?></span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row g-3 mb-4">
-                    <div class="col-lg-8">
-                        <div class="card border-0 shadow-sm" style="border-radius:14px;">
-                            <div class="card-header bg-white border-0 pb-0 pt-3 px-3">
-                                <h6 class="fw-bold mb-0" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#7c3aed;"><i class="fas fa-chart-bar me-2"></i>Projets créés (6 derniers mois)</h6>
-                            </div>
-                            <div class="card-body px-3 pb-3"><canvas id="chartProjets" height="100"></canvas></div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="card border-0 shadow-sm" style="border-radius:14px;">
-                            <div class="card-header bg-white border-0 pb-0 pt-3 px-3">
-                                <h6 class="fw-bold mb-0" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#10b981;"><i class="fas fa-chart-pie me-2"></i>Candidatures</h6>
-                            </div>
-                            <div class="card-body d-flex align-items-center justify-content-center px-3 pb-3"><canvas id="chartCandidatures" height="180"></canvas></div>
-                        </div>
-                    </div>
-                </div>
-<?php if (!empty($pendingProjects)): ?>
-                <div class="card border-warning mb-4">
-                    <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center gap-2">
-                        <i class="fas fa-clock text-warning"></i>
-                        <h5 class="card-title mb-0 text-warning">
-                            En attente de validation
-                            <span class="badge bg-warning text-dark ms-2"><?= count($pendingProjects) ?></span>
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>Titre</th>
-                                        <th>Description</th>
-                                        <th>Budget</th>
-                                        <th>Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                <?php foreach ($pendingProjects as $p): ?>
-                                    <tr id="pending-row-<?= $p->getId() ?>">
-                                        <td><?= htmlspecialchars($p->getTitre()) ?></td>
-                                        <td class="project-description" title="<?= htmlspecialchars($p->getDescription()) ?>">
-                                            <?= htmlspecialchars($p->getDescription()) ?>
-                                        </td>
-                                        <td><?= number_format((float)$p->getBudget(), 2, ',', ' ') ?> TND</td>
-                                        <td><?= htmlspecialchars($p->getDateCreation()) ?></td>
-                                        <td>
-                                            <button class="btn btn-success btn-sm me-1" onclick="validerProjet(<?= $p->getId() ?>, 'accepter')">
-                                                <i class="fas fa-check me-1"></i>Accepter
-                                            </button>
-                                            <button class="btn btn-danger btn-sm" onclick="validerProjet(<?= $p->getId() ?>, 'refuser')">
-                                                <i class="fas fa-times me-1"></i>Refuser
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+        <!-- FILTRES -->
+        <section class="admin-card admin-filter-bar-card">
+            <form method="GET" class="admin-filter-bar" id="project-filter-form">
+                <input type="hidden" name="action" value="projectlist">
+                <div class="admin-filter-bar-title"><i class="fas fa-sliders"></i><span>Recherche</span></div>
+                <input type="text" name="q" placeholder="Rechercher un projet..." value="<?= htmlspecialchars($search) ?>">
+                <select name="statut">
+                    <option value="">Tous statuts</option>
+                    <option value="en_attente" <?= $statut === 'en_attente' ? 'selected' : '' ?>>En attente</option>
+                    <option value="en_cours"   <?= $statut === 'en_cours'   ? 'selected' : '' ?>>En cours</option>
+                    <option value="termine"    <?= $statut === 'termine'    ? 'selected' : '' ?>>Terminé</option>
+                </select>
+                <select name="etat">
+                    <option value="">Tous états</option>
+                    <option value="publie"                <?= $etat_filtre === 'publie'                ? 'selected' : '' ?>>Publié</option>
+                    <option value="en_attente_validation" <?= $etat_filtre === 'en_attente_validation' ? 'selected' : '' ?>>En attente valid.</option>
+                    <option value="refuse"                <?= $etat_filtre === 'refuse'                ? 'selected' : '' ?>>Refusé</option>
+                </select>
+                <button class="admin-btn admin-btn-primary" type="submit">Filtrer</button>
+                <?php if ($search || $statut || $etat_filtre || $budget_min || $budget_max): ?>
+                    <a class="admin-btn admin-btn-outline" href="?action=projectlist">Reset</a>
                 <?php endif; ?>
+            </form>
+        </section>
 
-                <div class="card">
-                    <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">Liste des Projets</h5>
-                        <div class="d-flex flex-wrap gap-2">
-                            <form method="GET" class="d-flex flex-wrap gap-2 align-items-center">
-                                <input type="hidden" name="action" value="projectlist">
-                                <input type="text" name="q" class="form-control form-control-sm" placeholder="Rechercher..." value="<?= htmlspecialchars($search) ?>" style="width:180px;">
-                                <select name="statut" class="form-select form-select-sm" style="width:140px;">
-                                    <option value="">Tous statuts</option>
-                                    <option value="en_attente" <?= $statut === 'en_attente' ? 'selected' : '' ?>>En attente</option>
-                                    <option value="en_cours"   <?= $statut === 'en_cours'   ? 'selected' : '' ?>>En cours</option>
-                                    <option value="termine"    <?= $statut === 'termine'    ? 'selected' : '' ?>>Terminé</option>
-                                </select>
-                                <select name="etat" class="form-select form-select-sm" style="width:160px;">
-                                    <option value="">Tous états</option>
-                                    <option value="publie"                <?= $etat_filtre === 'publie'                ? 'selected' : '' ?>>Publié</option>
-                                    <option value="en_attente_validation" <?= $etat_filtre === 'en_attente_validation' ? 'selected' : '' ?>>En attente valid.</option>
-                                    <option value="refuse"                <?= $etat_filtre === 'refuse'                ? 'selected' : '' ?>>Refusé</option>
-                                </select>
-                                <input type="number" name="budget_min" class="form-control form-control-sm" placeholder="Budget min" min="0" value="<?= htmlspecialchars($budget_min) ?>" style="width:120px;">
-                                <input type="number" name="budget_max" class="form-control form-control-sm" placeholder="Budget max" min="0" value="<?= htmlspecialchars($budget_max) ?>" style="width:120px;">
-                                <button type="submit" class="btn btn-outline-primary btn-sm"><i class="fas fa-filter me-1"></i>Filtrer</button>
-                                <?php if ($search || $statut || $etat_filtre || $budget_min || $budget_max): ?>
-                                    <a href="?action=projectlist" class="btn btn-outline-secondary btn-sm">Réinitialiser</a>
-                                <?php endif; ?>
-                            </form>
-                            <a class="btn btn-outline-danger btn-sm" href="?action=projectlist&export=pdf&q=<?= urlencode($search) ?>">
-                                <i class="fas fa-file-pdf me-1"></i>Exporter PDF
-                            </a>
-                            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addProjectModal">
-                                <i class="fas fa-plus me-1"></i>Ajouter Projet
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Titre</th>
-                                        <th>Client</th>
-                                        <th>Description</th>
-                                        <th>Budget</th>
-                                        <th>Date création</th>
-                                        <th>Statut</th>
-                                        <th>État</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                <?php if (empty($projects)): ?>
-                                    <tr>
-                                        <td colspan="8" class="text-center text-muted">Aucun projet trouvé.</td>
-                                    </tr>
-                                <?php else: ?>
-                                    <?php foreach ($projects as $project): ?>
-                                        <tr>
-                                            <td><?= $project->getId() ?></td>
-                                            <td>
-                                                <a href="#" class="fw-semibold text-decoration-none" style="color:#1e1b4b;" onclick="voirProjet(<?= $project->getId() ?>); return false;">
-                                                    <?= htmlspecialchars($project->getTitre()) ?>
-                                                </a>
-                                            </td>
-                                            <td>
-                                                <?php if ($project->getNomClient() && trim($project->getNomClient())): ?>
-                                                    <span class="badge bg-light text-dark border">
-                                                        <i class="fas fa-user me-1 text-muted"></i><?= htmlspecialchars($project->getNomClient()) ?>
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span class="text-muted small">—</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="project-description" title="<?= htmlspecialchars($project->getDescription()) ?>">
-                                                <?= htmlspecialchars($project->getDescription()) ?>
-                                            </td>
-                                            <td><?= number_format((float)$project->getBudget(), 2, ',', ' ') ?> TND</td>
-                                            <td><?= htmlspecialchars($project->getDateCreation()) ?></td>
-                                            <td>
-                                                <span class="badge bg-<?= badgeStatusClass($project->getStatut()) ?>">
-                                                    <?= htmlspecialchars($project->getStatut()) ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <?php
-                                                $etatBadge = ['publie' => 'success', 'en_attente_validation' => 'warning', 'refuse' => 'danger'];
-                                                $etatLabel = ['publie' => 'Publié', 'en_attente_validation' => 'En attente', 'refuse' => 'Refusé'];
-                                                $e = $project->getEtat();
-                                                ?>
-                                                <span class="badge bg-<?= $etatBadge[$e] ?? 'secondary' ?>">
-                                                    <?= $etatLabel[$e] ?? $e ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex gap-1 flex-nowrap">
-                                                    <button class="btn btn-sm btn-warning" onclick="editProject(<?= $project->getId() ?>)" data-bs-toggle="modal" data-bs-target="#editProjectModal" title="Modifier">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-info text-white" onclick="openAddTache(<?= $project->getId() ?>, <?= htmlspecialchars(json_encode($project->getTitre())) ?>)" title="Ajouter une tâche">
-                                                        <i class="fas fa-plus"></i> Tâche
-                                                    </button>
-                                                    <button class="btn btn-sm btn-danger" onclick="deleteProject(<?= $project->getId() ?>)" title="Supprimer">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+        <!-- LISTE DES PROJETS -->
+        <div class="admin-table-wrap">
+            <div class="admin-table-header">
+                <div class="admin-table-title">Liste des Projets</div>
             </div>
-        </div>
-        <!-- End Projects Container -->
-
-        <!-- CANDIDATURES SECTION -->
-        <div class="container mt-2">
-            <div class="page-inner">
-
-                <!-- Candidatures en attente -->
-                <?php if (!empty($pendingCands)): ?>
-                <div class="card border-warning mb-4">
-                    <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center gap-2">
-                        <i class="fas fa-user-clock text-warning"></i>
-                        <h5 class="card-title mb-0 text-warning">
-                            Candidatures en attente
-                            <span class="badge bg-warning text-dark ms-2"><?= count($pendingCands) ?></span>
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead>
-                                    <tr><th>Freelancer</th><th>Projet</th><th>Date</th><th>Actions</th></tr>
-                                </thead>
-                                <tbody>
-                                <?php foreach ($pendingCands as $c): ?>
-                                <tr id="cand-row-<?= $c->getId() ?>">
-                                    <td><?= htmlspecialchars($c->getPrenomFreelancer().' '.$c->getNomFreelancer()) ?></td>
-                                    <td><?= htmlspecialchars($c->getTitreProjet()) ?></td>
-                                    <td><?= date('d/m/Y', strtotime($c->getCreatedAt())) ?></td>
-                                    <td>
-                                        <button class="btn btn-success btn-sm me-1" onclick="validerCand(<?= $c->getId() ?>, 'accepter_cand')">
-                                            <i class="fas fa-check me-1"></i>Accepter
-                                        </button>
-                                        <button class="btn btn-danger btn-sm" onclick="validerCand(<?= $c->getId() ?>, 'refuser_cand')">
-                                            <i class="fas fa-times me-1"></i>Refuser
-                                        </button>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Titre</th><th>Client</th><th>Description</th>
+                        <th>Budget</th><th>Date</th><th>Statut</th><th>État</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php if (empty($projects)): ?>
+                    <tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:2rem;">Aucun projet trouvé.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($projects as $project):
+                        $etatBadge = ['publie'=>'badge-actif','en_attente_validation'=>'badge-pending','refuse'=>'badge-suspendu'];
+                        $etatLabel = ['publie'=>'Publié','en_attente_validation'=>'En attente','refuse'=>'Refusé'];
+                        $statutBadge = ['en_cours'=>'badge-pending','termine'=>'badge-actif','en_attente'=>'badge-suspendu'];
+                        $e = $project->getEtat(); $s = $project->getStatut();
+                    ?>
+                    <tr>
+                        <td>#<?= $project->getId() ?></td>
+                        <td>
+                            <div class="table-service-name">
+                                <a href="#" onclick="voirProjet(<?= $project->getId() ?>); return false;" style="color:inherit;text-decoration:none;">
+                                    <?= htmlspecialchars($project->getTitre()) ?>
+                                </a>
+                            </div>
+                        </td>
+                        <td><?= $project->getNomClient() ? htmlspecialchars($project->getNomClient()) : '<span style="color:#9ca3af">—</span>' ?></td>
+                        <td class="project-desc-cell" title="<?= htmlspecialchars($project->getDescription()) ?>"><?= htmlspecialchars($project->getDescription()) ?></td>
+                        <td><?= number_format((float)$project->getBudget(), 2, ',', ' ') ?> TND</td>
+                        <td><?= htmlspecialchars($project->getDateCreation()) ?></td>
+                        <td><span class="badge <?= $statutBadge[$s] ?? 'badge-pending' ?>"><?= htmlspecialchars($s) ?></span></td>
+                        <td><span class="badge <?= $etatBadge[$e] ?? 'badge-pending' ?>"><?= $etatLabel[$e] ?? $e ?></span></td>
+                        <td>
+                            <div class="admin-stack-actions">
+                                <button class="admin-btn admin-btn-warning admin-btn-sm" onclick="editProject(<?= $project->getId() ?>)" data-bs-toggle="modal" data-bs-target="#editProjectModal"><i class="fas fa-edit"></i> Modifier</button>
+                                <button class="admin-btn admin-btn-outline admin-btn-sm" onclick="openAddTache(<?= $project->getId() ?>, <?= htmlspecialchars(json_encode($project->getTitre())) ?>)"><i class="fas fa-plus"></i> Tâche</button>
+                                <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="deleteProject(<?= $project->getId() ?>)"><i class="fas fa-trash"></i> Supprimer</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
                 <?php endif; ?>
-
-                <!-- Toutes les candidatures -->
-                <div class="card mb-4">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="card-title mb-0"><i class="fas fa-paper-plane me-2"></i>Toutes les Candidatures</h5>
-                        <span class="badge bg-secondary"><?= count($candidatures) ?></span>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead>
-                                    <tr><th>Freelancer</th><th>Projet</th><th>Date</th><th>Statut</th><th>Actions</th></tr>
-                                </thead>
-                                <tbody>
-                                <?php if (empty($candidatures)): ?>
-                                    <tr><td colspan="5" class="text-center text-muted">Aucune candidature.</td></tr>
-                                <?php else: ?>
-                                    <?php foreach ($candidatures as $c):
-                                        $badges = ['en_attente'=>'warning','accepte'=>'success','refuse'=>'danger'];
-                                        $labels = ['en_attente'=>'En attente','accepte'=>'Acceptée','refuse'=>'Refusée'];
-                                        $s = $c->getStatut();
-                                    ?>
-                                    <tr id="cand-row-<?= $c->getId() ?>">
-                                        <td><?= htmlspecialchars($c->getPrenomFreelancer().' '.$c->getNomFreelancer()) ?></td>
-                                        <td><?= htmlspecialchars($c->getTitreProjet()) ?></td>
-                                        <td><?= date('d/m/Y', strtotime($c->getCreatedAt())) ?></td>
-                                        <td><span class="badge bg-<?= $badges[$s]??'secondary' ?>"><?= $labels[$s]??$s ?></span></td>
-                                        <td>
-                                            <?php if ($s === 'en_attente'): ?>
-                                            <button class="btn btn-success btn-sm me-1" onclick="validerCand(<?= $c->getId() ?>, 'accepter_cand')">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                            <button class="btn btn-danger btn-sm" onclick="validerCand(<?= $c->getId() ?>, 'refuser_cand')">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                            <?php else: ?>
-                                            <span class="text-muted small">—</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tâches des freelancers -->
-                <div class="card mb-4">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <h5 class="card-title mb-0"><i class="fas fa-tasks me-2"></i>Tâches des Freelancers</h5>
-                        <span class="badge bg-secondary"><?= count($taches) ?></span>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead>
-                                    <tr><th>Freelancer</th><th>Projet</th><th>Tâche</th><th>Description</th><th>Statut</th><th>Prix</th><th>Date</th><th>Actions</th></tr>
-                                </thead>
-                                <tbody>
-                                <?php if (empty($taches)): ?>
-                                    <tr><td colspan="8" class="text-center text-muted">Aucune tâche.</td></tr>
-                                <?php else: ?>
-                                    <?php foreach ($taches as $t):
-                                        $tb = ['a_faire'=>'secondary','en_cours'=>'warning','termine'=>'success'];
-                                        $tl = ['a_faire'=>'À faire','en_cours'=>'En cours','termine'=>'Terminé'];
-                                        $ts = $t['statut'];
-                                    ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($t['prenom_freelancer'].' '.$t['nom_freelancer']) ?></td>
-                                        <td><?= htmlspecialchars($t['titre_projet']) ?></td>
-                                        <td><?= htmlspecialchars($t['titre']) ?></td>
-                                        <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= htmlspecialchars($t['description']??'') ?></td>
-                                        <td><span class="badge bg-<?= $tb[$ts]??'secondary' ?>"><?= $tl[$ts]??$ts ?></span></td>
-                                        <td><?= !empty($t['prix']) && (float)$t['prix'] > 0 ? number_format((float)$t['prix'],2,',',' ').' TND' : '—' ?></td>
-                                        <td><?= date('d/m/Y', strtotime($t['created_at'])) ?></td>
-                                        <td>
-                                            <div class="d-flex gap-1 flex-nowrap">
-                                                <button class="btn btn-warning btn-sm" title="Modifier"
-                                                    onclick="openEditTacheAdmin(<?= $t['id'] ?>, <?= htmlspecialchars(json_encode($t['titre'])) ?>, <?= htmlspecialchars(json_encode($t['description']??'')) ?>, '<?= $t['statut'] ?>', <?= (float)($t['prix']??0) ?>)">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="btn btn-danger btn-sm" title="Supprimer"
-                                                    onclick="deleteTacheAdmin(<?= $t['id'] ?>)">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+                </tbody>
+            </table>
         </div>
 
-        <footer class="footer">
-            <div class="container-fluid d-flex justify-content-between">
-                <div class="copyright">2026 © SkillBridge</div>
+
+        <!-- CANDIDATURES EN ATTENTE -->
+        <?php if (!empty($pendingCands)): ?>
+        <section class="admin-card" style="margin-top:1.5rem;border-left:4px solid #f59e0b;">
+            <div class="admin-table-header">
+                <div class="admin-table-title" style="color:#f59e0b;">
+                    <i class="fas fa-user-clock" style="margin-right:.5rem;"></i>
+                    Candidatures en attente
+                    <span class="badge-pending" style="margin-left:.5rem;"><?= count($pendingCands) ?></span>
+                </div>
             </div>
-        </footer>
-    </div>
+            <table class="admin-table">
+                <thead><tr><th>Freelancer</th><th>Projet</th><th>Date</th><th>Actions</th></tr></thead>
+                <tbody>
+                <?php foreach ($pendingCands as $c): ?>
+                <tr id="cand-row-<?= $c->getId() ?>">
+                    <td><?= htmlspecialchars($c->getPrenomFreelancer().' '.$c->getNomFreelancer()) ?></td>
+                    <td><?= htmlspecialchars($c->getTitreProjet()) ?></td>
+                    <td><?= date('d/m/Y', strtotime($c->getCreatedAt())) ?></td>
+                    <td>
+                        <div class="admin-stack-actions">
+                            <button class="admin-btn admin-btn-success admin-btn-sm" onclick="validerCand(<?= $c->getId() ?>, 'accepter_cand')"><i class="fas fa-check"></i> Accepter</button>
+                            <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="validerCand(<?= $c->getId() ?>, 'refuser_cand')"><i class="fas fa-times"></i> Refuser</button>
+                        </div>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </section>
+        <?php endif; ?>
+
+        <!-- TOUTES LES CANDIDATURES -->
+        <div class="admin-table-wrap" style="margin-top:1.5rem;">
+            <div class="admin-table-header">
+                <div class="admin-table-title"><i class="fas fa-paper-plane" style="margin-right:.5rem;"></i>Toutes les Candidatures</div>
+                <span class="badge-pending"><?= count($candidatures) ?></span>
+            </div>
+            <table class="admin-table">
+                <thead><tr><th>Freelancer</th><th>Projet</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead>
+                <tbody>
+                <?php if (empty($candidatures)): ?>
+                    <tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:2rem;">Aucune candidature.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($candidatures as $c):
+                        $cbadge = ['en_attente'=>'badge-pending','accepte'=>'badge-actif','refuse'=>'badge-suspendu'];
+                        $clabel = ['en_attente'=>'En attente','accepte'=>'Acceptée','refuse'=>'Refusée'];
+                        $cs = $c->getStatut();
+                    ?>
+                    <tr id="cand-row-<?= $c->getId() ?>">
+                        <td><?= htmlspecialchars($c->getPrenomFreelancer().' '.$c->getNomFreelancer()) ?></td>
+                        <td><?= htmlspecialchars($c->getTitreProjet()) ?></td>
+                        <td><?= date('d/m/Y', strtotime($c->getCreatedAt())) ?></td>
+                        <td><span class="badge <?= $cbadge[$cs]??'badge-pending' ?>"><?= $clabel[$cs]??$cs ?></span></td>
+                        <td>
+                            <?php if ($cs === 'en_attente'): ?>
+                            <div class="admin-stack-actions">
+                                <button class="admin-btn admin-btn-success admin-btn-sm" onclick="validerCand(<?= $c->getId() ?>, 'accepter_cand')"><i class="fas fa-check"></i></button>
+                                <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="validerCand(<?= $c->getId() ?>, 'refuser_cand')"><i class="fas fa-times"></i></button>
+                            </div>
+                            <?php else: ?><span style="color:#9ca3af;">—</span><?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- TÂCHES DES FREELANCERS -->
+        <div class="admin-table-wrap" style="margin-top:1.5rem;">
+            <div class="admin-table-header">
+                <div class="admin-table-title"><i class="fas fa-tasks" style="margin-right:.5rem;"></i>Tâches des Freelancers</div>
+                <span class="badge-pending"><?= count($taches) ?></span>
+            </div>
+            <table class="admin-table">
+                <thead><tr><th>Freelancer</th><th>Projet</th><th>Tâche</th><th>Description</th><th>Statut</th><th>Prix</th><th>Date</th><th>Actions</th></tr></thead>
+                <tbody>
+                <?php if (empty($taches)): ?>
+                    <tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:2rem;">Aucune tâche.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($taches as $t):
+                        $tbadge = ['a_faire'=>'badge-pending','en_cours'=>'badge-warning','termine'=>'badge-actif'];
+                        $tlabel = ['a_faire'=>'À faire','en_cours'=>'En cours','termine'=>'Terminé'];
+                        $ts = $t['statut'];
+                    ?>
+                    <tr>
+                        <td><?= htmlspecialchars($t['prenom_freelancer'].' '.$t['nom_freelancer']) ?></td>
+                        <td><?= htmlspecialchars($t['titre_projet']) ?></td>
+                        <td><?= htmlspecialchars($t['titre']) ?></td>
+                        <td class="project-desc-cell"><?= htmlspecialchars($t['description']??'') ?></td>
+                        <td><span class="badge <?= $tbadge[$ts]??'badge-pending' ?>"><?= $tlabel[$ts]??$ts ?></span></td>
+                        <td><?= !empty($t['prix']) && (float)$t['prix'] > 0 ? number_format((float)$t['prix'],2,',',' ').' TND' : '—' ?></td>
+                        <td><?= date('d/m/Y', strtotime($t['created_at'])) ?></td>
+                        <td>
+                            <div class="admin-stack-actions">
+                                <button class="admin-btn admin-btn-warning admin-btn-sm" onclick="openEditTacheAdmin(<?= $t['id'] ?>, <?= htmlspecialchars(json_encode($t['titre'])) ?>, <?= htmlspecialchars(json_encode($t['description']??'')) ?>, '<?= $t['statut'] ?>', <?= (float)($t['prix']??0) ?>)"><i class="fas fa-edit"></i></button>
+                                <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="deleteTacheAdmin(<?= $t['id'] ?>)"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+    </main>
 </div>
 
 <div class="modal fade" id="addProjectModal" tabindex="-1">
@@ -954,10 +719,7 @@ function badgeStatusClass($status) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="<?= BASE_URL ?>/Views/assets/js/core/jquery-3.7.1.min.js"></script>
-<script src="<?= BASE_URL ?>/Views/assets/js/core/popper.min.js"></script>
-<script src="<?= BASE_URL ?>/Views/assets/js/core/bootstrap.min.js"></script>
-<script src="<?= BASE_URL ?>/Views/assets/js/kaiadmin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
     .swal2-popup { font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Helvetica, Arial, sans-serif; }
@@ -1242,19 +1004,12 @@ function validerCand(id, action) {
     });
 }
 
-const toggleSidebarBtn = document.querySelector('.toggle-sidebar');
-const showSidebarBtn   = document.getElementById('showSidebarBtn');
-const wrapper          = document.getElementById('wrapper');
-
 document.getElementById('addProjectModal').addEventListener('hidden.bs.modal', function () {
     const form = document.getElementById('addProjectForm');
     form.reset();
     form.querySelectorAll('.is-invalid, .is-valid').forEach(el => el.classList.remove('is-invalid', 'is-valid'));
     document.getElementById('addProjectMsg').innerHTML = '';
 });
-
-if (toggleSidebarBtn) toggleSidebarBtn.addEventListener('click', () => wrapper.classList.toggle('sidebar-hidden'));
-if (showSidebarBtn)   showSidebarBtn.addEventListener('click',   () => wrapper.classList.remove('sidebar-hidden'));
 
 // ── Ajouter tâche (Admin) ─────────────────────────────────────────────
 function openAddTache(idProjet, titreProjet) {

@@ -1,73 +1,243 @@
 <?php
-// Simple Router
 session_start();
-require_once 'config.php';
+
+require_once __DIR__ . '/Controllers/ServiceController.php';
+require_once __DIR__ . '/Controllers/CategorieController.php';
+require_once __DIR__ . '/Controllers/ChatController.php';
+require_once __DIR__ . '/Controllers/OffreController.php';
 
 $request = $_GET['action'] ?? 'home';
-$method = $_GET['method'] ?? 'view';
+$serviceController = new ServiceController();
+$categorieController = new CategorieController();
+$chatController = new ChatController();
+$offreController = new OffreController();
 
-// Handle logout
 if ($request === 'logout') {
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 3600, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+    }
+    setcookie('jwt', '', time() - 3600, '/');
     session_destroy();
     header('Location: ?action=home');
     exit;
 }
 
-// Route handling
 switch ($request) {
     case 'login':
-        // Si déjà connecté, rediriger vers la bonne page
-        if (isset($_SESSION['user_id'])) {
-            if ($_SESSION['user_role'] == 1)      header('Location: ?action=userlist');
-            elseif ($_SESSION['user_role'] == 3)  header('Location: ?action=mes_projets');
-            else                                   header('Location: ?action=mes_projets_client');
-            exit;
-        }
-        require 'Views/Frontoffice/login.php';
+        require __DIR__ . '/Views/Frontoffice/login.php';
         break;
-    case 'projects':
-        require 'Views/Frontoffice/projects.php';
+
+    case 'forgot_password':
+        require __DIR__ . '/Views/Frontoffice/forgot_password.php';
         break;
-    case 'paiement':
-        require 'Views/Frontoffice/paiement.php';
+
+    case 'verify_email':
+        require __DIR__ . '/Views/Frontoffice/verify_email.php';
         break;
+
     case 'register':
-        require 'Views/Frontoffice/register.php';
+        require __DIR__ . '/Views/Frontoffice/register.php';
         break;
+
+<<<<<<< HEAD
+    case 'projects':
+        require __DIR__ . '/Views/Frontoffice/projects.php';
+        break;
+
+    case 'paiement':
+        require __DIR__ . '/Views/Frontoffice/paiement.php';
+        break;
+
+=======
+>>>>>>> 70c0bf137c21f2ed3b54e66ff17647b5ff291330
     case 'profile':
-        require 'Views/Frontoffice/profile.php';
+        require __DIR__ . '/Views/Frontoffice/profile.php';
         break;
+
+<<<<<<< HEAD
     case 'mes_projets':
-        require 'Views/Frontoffice/mes_projets.php';
+        require __DIR__ . '/Views/Frontoffice/mes_projets.php';
         break;
+
     case 'mes_projets_client':
-        require 'Views/Frontoffice/mes_projets_client.php';
+        require __DIR__ . '/Views/Frontoffice/mes_projets_client.php';
         break;
-    case 'candidatures':
-        require 'Views/Backoffice/candidatures.php';
+
+=======
+>>>>>>> 70c0bf137c21f2ed3b54e66ff17647b5ff291330
+    case 'myrating':
+        require __DIR__ . '/Views/Frontoffice/myrating.php';
         break;
+
+    case 'freelancers':
+        require __DIR__ . '/Views/Frontoffice/freelancers.php';
+        break;
+
+    case 'services':
+        $serviceController->publicList();
+        break;
+
+    case 'service_detail':
+        $serviceController->detail((int)($_GET['id'] ?? 0));
+        break;
+
+    case 'my_services':
+        $serviceController->freelancerList();
+        break;
+
+    case 'job_offers':
+        $offreController->publicList();
+        break;
+
+    case 'job_offer_detail':
+        $offreController->detail((int)($_GET['id'] ?? 0));
+        break;
+
+    case 'job_offer_apply':
+        $offreController->apply((int)($_GET['id'] ?? 0));
+        break;
+
+    case 'my_applications':
+        $offreController->myApplications();
+        break;
+
+    case 'my_job_offers':
+        $offreController->clientList();
+        break;
+
+    case 'job_offer_create':
+        $offreController->save();
+        break;
+
+    case 'job_offer_edit':
+        $offreController->save((int)($_GET['id'] ?? 0));
+        break;
+
+    case 'job_offer_delete':
+        $offreController->delete((int)($_GET['id'] ?? 0));
+        break;
+
+    case 'job_application_client_status':
+        $offreController->updateClientApplicationStatus((int)($_GET['id'] ?? 0), $_GET['status'] ?? '');
+        break;
+
+    case 'service_create':
+        $serviceController->save();
+        break;
+
+    case 'service_edit':
+        $serviceController->save((int)($_GET['id'] ?? 0));
+        break;
+
+    case 'service_delete':
+        $serviceController->delete((int)($_GET['id'] ?? 0));
+        break;
+
+    case 'services_admin':
+        $serviceController->adminList();
+        break;
+
+    case 'service_create_admin':
+        $serviceController->adminCreate();
+        break;
+
+    case 'service_edit_admin':
+        $serviceController->adminEdit((int)($_GET['id'] ?? 0));
+        break;
+
+    case 'service_delete_admin':
+        $serviceController->adminDelete((int)($_GET['id'] ?? 0));
+        break;
+
+    case 'service_status':
+        $serviceController->updateStatus((int)($_GET['id'] ?? 0), $_GET['status'] ?? '');
+        break;
+
+    case 'job_offers_admin':
+        $offreController->adminList();
+        break;
+
+    case 'job_applications_admin':
+        $offreController->adminApplications();
+        break;
+
+    case 'job_offer_status':
+        $offreController->updateStatus((int)($_GET['id'] ?? 0), $_GET['status'] ?? '');
+        break;
+
+    case 'job_application_status':
+        $offreController->updateApplicationStatus((int)($_GET['id'] ?? 0), $_GET['status'] ?? '');
+        break;
+
+    case 'chat':
+        $chatController->chatPage(
+            (int)($_GET['service_id'] ?? 0),
+            (int)($_GET['conversation_id'] ?? 0),
+            (int)($_GET['offer_id'] ?? 0),
+            (int)($_GET['freelancer_id'] ?? 0)
+        );
+        break;
+
+    case 'chat_send':
+        $chatController->sendMessage();
+        break;
+
+    case 'chat_messages':
+        $chatController->messagesJson((int)($_GET['conversation_id'] ?? 0));
+        break;
+
+    case 'categories_admin':
+        $categorieController->adminIndex();
+        break;
+
+    case 'category_create':
+        $categorieController->create();
+        break;
+
+    case 'category_edit':
+        $categorieController->edit((int)($_GET['id'] ?? 0));
+        break;
+
+    case 'category_delete':
+        $categorieController->delete((int)($_GET['id'] ?? 0));
+        break;
+
     case 'userlist':
-        require 'Views/Backoffice/userList.php';
+        require __DIR__ . '/Views/Backoffice/userList.php';
         break;
+
+<<<<<<< HEAD
     case 'dashboard':
-        require 'Views/Backoffice/dashboard.php';
+        require __DIR__ . '/Views/Backoffice/dashboard.php';
         break;
+
     case 'projectlist':
-        require 'Views/Backoffice/projectList.php';
+        require __DIR__ . '/Views/Backoffice/projectList.php';
         break;
+
+    case 'candidatures':
+        require __DIR__ . '/Views/Backoffice/candidatures.php';
+        break;
+
     case 'adduser':
-        require 'Views/Backoffice/addUser.php';
+        require __DIR__ . '/Views/Backoffice/addUser.php';
         break;
+
     case 'edituser':
-        require 'Views/Backoffice/editUser.php';
+        require __DIR__ . '/Views/Backoffice/editUser.php';
         break;
+
+=======
+>>>>>>> 70c0bf137c21f2ed3b54e66ff17647b5ff291330
+    case 'statistics':
+        require __DIR__ . '/Views/Backoffice/statistics.php';
+        break;
+
     case 'home':
     default:
-        if (isset($_SESSION['user_id'])) {
-            if ($_SESSION['user_role'] == 1)     { header('Location: ?action=userlist'); exit; }
-            else                                  { header('Location: ?action=projects&tab=mes'); exit; }
-        }
-        require 'Views/Frontoffice/home.php';
+        require __DIR__ . '/Views/Frontoffice/Home.php';
         break;
 }
 ?>
