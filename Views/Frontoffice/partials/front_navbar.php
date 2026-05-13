@@ -34,6 +34,9 @@ if ($userDisplayName === '') {
                 <li><a class="front-nav-link <?= in_array($currentAction, ['my_services', 'service_create', 'service_edit'], true) ? 'active' : '' ?>" href="?action=my_services"><i class="fas fa-layer-group"></i> Mes Services</a></li>
             <?php endif; ?>
             <?php if (in_array($userRole, [2, 3], true)): ?>
+                <li><a class="front-nav-link <?= in_array($currentAction, ['projects', 'mes_projets', 'mes_projets_client'], true) ? 'active' : '' ?>" href="?action=projects"><i class="fas fa-diagram-project"></i> Projets</a></li>
+            <?php endif; ?>
+            <?php if (in_array($userRole, [2, 3], true)): ?>
                 <li><a class="front-nav-link <?= $currentAction === 'chat' ? 'active' : '' ?>" href="?action=chat"><i class="fas fa-comments"></i> Messages</a></li>
             <?php endif; ?>
             <?php if ($userRole === 1): ?>

@@ -1,4 +1,11 @@
 <?php
+
+// Base URL for assets - adjust if running in a subdirectory
+define('BASE_URL', (function() {
+    $script = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+    return rtrim($script, '/');
+})());
+
 class Config
 {
     private static $connexion = null;

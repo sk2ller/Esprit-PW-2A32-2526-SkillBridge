@@ -59,6 +59,15 @@ $userName = trim(($_SESSION['user_prenom'] ?? 'Admin') . ' ' . ($_SESSION['user_
       </span>
       <span class="admin-link-arrow"><i class="fas fa-chevron-right"></i></span>
     </a>
+    <a href="?action=projectlist" class="admin-link <?= $currentAction === 'projectlist' ? 'active' : '' ?>">
+      <span class="admin-link-icon"><i class="fas fa-diagram-project"></i></span>
+      <span class="admin-link-text">
+        <strong>Projets</strong>
+        <small>Gestion des projets</small>
+      </span>
+      <span class="admin-link-pill">CRUD</span>
+      <span class="admin-link-arrow"><i class="fas fa-chevron-right"></i></span>
+    </a>
     <a href="?action=home" class="admin-link">
       <span class="admin-link-icon"><i class="fas fa-globe"></i></span>
       <span class="admin-link-text">
