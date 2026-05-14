@@ -8,12 +8,6 @@ class CategorieProduit {
     private $created_at;
     private $nb_produits; // utilisé pour afficher le nombre de produits (jointure)
 
-    // Constructeur avec paramètres optionnels
-    public function __construct($nom_categorie = null, $description = null, $icone = null) {
-        $this->nom_categorie = $nom_categorie;
-        $this->description = $description;
-        $this->icone = $icone;
-    }
 
     // -- Getters --
     public function getId() { return $this->id_categorie; }

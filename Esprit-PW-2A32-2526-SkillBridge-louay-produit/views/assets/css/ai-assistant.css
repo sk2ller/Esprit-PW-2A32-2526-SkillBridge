@@ -1,0 +1,327 @@
+/* ========================================
+   SKILLBRIDGE — AI Assistant Chat Widget CSS
+   Floating chat bubble + panel
+   Matches the existing dark theme
+   ======================================== */
+
+/* ---- CHAT BUBBLE ---- */
+.ai-bubble {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF7F1C, #FF9E4C);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 8px 32px rgba(255, 127, 28, 0.35);
+  z-index: 9999;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: aiBubbleEntry 0.5s ease both;
+}
+
+.ai-bubble:hover {
+  transform: scale(1.1);
+  box-shadow: 0 12px 40px rgba(255, 127, 28, 0.5);
+}
+
+.ai-bubble.ai-bubble--admin {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  box-shadow: 0 8px 32px rgba(220, 38, 38, 0.35);
+}
+
+.ai-bubble.ai-bubble--vendeur {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  box-shadow: 0 8px 32px rgba(79, 70, 229, 0.35);
+}
+
+.ai-bubble--hidden { display: none !important; }
+
+@keyframes aiBubbleEntry {
+  from { transform: scale(0) rotate(-180deg); opacity: 0; }
+  to { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* Notification dot */
+.ai-bubble-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  background: #34d399;
+  border-radius: 50%;
+  border: 2px solid #1A1A1C;
+  animation: dotPulse 2s infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* ---- CHAT PANEL ---- */
+.ai-panel {
+  position: fixed;
+  bottom: 96px;
+  right: 24px;
+  width: 340px;
+  height: 480px;
+  background: #252528;
+  border: 1px solid #3A3A42;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(20px) scale(0.95);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-panel.ai-panel--open {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ---- PANEL HEADER ---- */
+.ai-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #3A3A42;
+  background: #1A1A1C;
+  flex-shrink: 0;
+}
+
+.ai-panel-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.ai-panel-avatar--client {
+  background: linear-gradient(135deg, #FF7F1C, #FF9E4C);
+  color: white;
+}
+
+.ai-panel-avatar--vendeur {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: white;
+}
+
+.ai-panel-avatar--admin {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: white;
+}
+
+.ai-panel-info { flex: 1; min-width: 0; }
+.ai-panel-name { font-weight: 700; font-size: 0.9rem; color: #FFFFFF; }
+.ai-panel-status { font-size: 0.72rem; color: #34d399; display: flex; align-items: center; gap: 4px; }
+.ai-panel-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: #34d399;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.ai-panel-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #3A3A42;
+  background: transparent;
+  color: #A8A8A8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.ai-panel-close:hover {
+  background: #3A3A42;
+  color: #FFFFFF;
+}
+
+/* ---- MESSAGES AREA ---- */
+.ai-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-messages::-webkit-scrollbar { width: 4px; }
+.ai-messages::-webkit-scrollbar-track { background: transparent; }
+.ai-messages::-webkit-scrollbar-thumb { background: #3A3A42; border-radius: 2px; }
+
+/* Message bubbles */
+.ai-msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  word-wrap: break-word;
+  animation: msgSlide 0.25s ease;
+}
+
+@keyframes msgSlide {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-msg--assistant {
+  align-self: flex-start;
+  background: #2F2F33;
+  color: #E8E8E8;
+  border-bottom-left-radius: 4px;
+}
+
+.ai-msg--user {
+  align-self: flex-end;
+  background: #FF7F1C;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.ai-msg--user.ai-msg--vendeur { background: #4f46e5; }
+.ai-msg--user.ai-msg--admin { background: #dc2626; }
+
+.ai-msg--error {
+  align-self: center;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  font-size: 0.8rem;
+  text-align: center;
+  max-width: 95%;
+}
+
+/* ---- TYPING INDICATOR ---- */
+.ai-typing {
+  display: none;
+  align-self: flex-start;
+  padding: 12px 18px;
+  background: #2F2F33;
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+}
+
+.ai-typing.ai-typing--visible { display: flex; }
+
+.ai-typing-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.ai-typing-dot {
+  width: 7px;
+  height: 7px;
+  background: #A8A8A8;
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.ai-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.ai-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+.ai-typing-dot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ---- INPUT AREA ---- */
+.ai-input-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid #3A3A42;
+  background: #1A1A1C;
+  flex-shrink: 0;
+}
+
+.ai-input {
+  flex: 1;
+  padding: 10px 14px;
+  background: #2F2F33;
+  border: 1px solid #3A3A42;
+  border-radius: 10px;
+  color: #FFFFFF;
+  font-size: 0.85rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+  min-width: 0;
+}
+
+.ai-input:focus { border-color: #FF7F1C; }
+.ai-input::placeholder { color: #A8A8A8; }
+
+.ai-send {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: none;
+  background: #FF7F1C;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.ai-send:hover { background: #FF9E4C; transform: scale(1.05); }
+.ai-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.ai-send--vendeur { background: #4f46e5; }
+.ai-send--vendeur:hover { background: #6366f1; }
+.ai-send--admin { background: #dc2626; }
+.ai-send--admin:hover { background: #ef4444; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 480px) {
+  .ai-panel {
+    width: calc(100vw - 20px);
+    height: calc(100vh - 120px);
+    bottom: 80px;
+    right: 10px;
+    border-radius: 14px;
+  }
+
+  .ai-bubble {
+    bottom: 16px;
+    right: 16px;
+    width: 54px;
+    height: 54px;
+    font-size: 1.3rem;
+  }
+}

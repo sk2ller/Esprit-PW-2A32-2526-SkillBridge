@@ -1,0 +1,39 @@
+# SkillBridge - Fichiers à ignorer par Git
+
+# Configuration sensible
+config_ai.php
+.env
+*.key
+*.pem
+
+# Uploads utilisateurs
+uploads/
+uploads/produits/*
+!uploads/produits/.gitkeep
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+error_log
+debug.log
+
+# Cache
+cache/
+tmp/
+temp/
+
+# Backup
+*.bak
+*.backup
+*.old
+*~

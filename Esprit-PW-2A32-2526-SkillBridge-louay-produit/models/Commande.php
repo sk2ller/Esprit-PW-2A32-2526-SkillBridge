@@ -17,21 +17,7 @@ class Commande {
     private $updated_at;
     private $nom_produit; // utilisé pour afficher le nom du produit (jointure)
 
-    // Constructeur avec tous les champs de la commande
-    public function __construct($nom_client = null, $email_client = null, $telephone = null,
-                                $adresse = null, $id_produit = null, $quantite = null,
-                                $prix_total = null, $note = null, $rating = null, $review = null) {
-        $this->nom_client = $nom_client;
-        $this->email_client = $email_client;
-        $this->telephone = $telephone;
-        $this->adresse = $adresse;
-        $this->id_produit = $id_produit;
-        $this->quantite = $quantite;
-        $this->prix_total = $prix_total;
-        $this->note = $note;
-        $this->rating = $rating;
-        $this->review = $review;
-    }
+
 
     // -- Getters --
     public function getId() { return $this->id_commande; }

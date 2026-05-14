@@ -5,8 +5,8 @@ include __DIR__ . '/../partials/navbar.php';
 
 <!-- HERO -->
 <?php if (!isset($_GET['search']) && !isset($_GET['categorie'])): ?>
-<section style="margin-top: var(--nav-height); background: linear-gradient(135deg, #0d1117 0%, #130a2e 50%, #0d1117 100%); padding: 80px 2rem 60px; position: relative; overflow: hidden;">
-  <div style="position:absolute; top:-100px; right:-100px; width:500px; height:500px; background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%); pointer-events:none;"></div>
+<section style="margin-top: 0; background: linear-gradient(135deg, rgba(30,30,32,.96), rgba(58,45,39,.92)); padding: 80px 2rem 60px; position: relative; overflow: hidden; border-radius: 0 0 30px 30px; box-shadow: 0 20px 50px rgba(30,30,32,.14);">
+  <div style="position:absolute; inset:0; background: radial-gradient(circle at top right, rgba(240,138,59,.16), transparent 24%); pointer-events:none;"></div>
   <div style="max-width:1400px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:4rem; align-items:center;">
     <div>
       <div class="hero-eyebrow">🛍️ Marketplace de Produits Numériques</div>
@@ -22,14 +22,14 @@ include __DIR__ . '/../partials/navbar.php';
       </div>
     </div>
     <div class="hero-visuals">
-      <div class="hero-card hero-card-green" style="grid-column:1">
+      <div style="background: linear-gradient(135deg, var(--amber), var(--amber-light)); color: white; border-radius: 22px; padding: 1.5rem; grid-column:1; box-shadow: 0 14px 30px rgba(224,112,32,.24);">
         <div style="font-size:2rem; margin-bottom:0.5rem;">📦</div>
-        <div class="card-stat">100+ Produits</div>
-        <div class="card-label">Numériques & Vérifiés</div>
+        <div style="font-size: 1.4rem; font-weight: 800;">100+ Produits</div>
+        <div style="font-size: 0.85rem; opacity: 0.85;">Numériques & Vérifiés</div>
       </div>
-      <div class="hero-card hero-card-students" style="grid-column:2">
-        <div class="big-num">50K+</div>
-        <div class="sub">Téléchargements</div>
+      <div style="background: linear-gradient(135deg, rgba(30,30,32,.88), rgba(45,45,49,.9)); color: white; border: 1px solid rgba(255,255,255,.08); border-radius: 22px; padding: 1.5rem; grid-column:2; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+        <div style="font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700;">50K+</div>
+        <div style="font-size: 0.8rem; color: rgba(255,255,255,.65);">Téléchargements</div>
       </div>
     </div>
   </div>
@@ -66,6 +66,43 @@ include __DIR__ . '/../partials/navbar.php';
   <?php endforeach; ?>
 </div>
 
+<!-- SORTING BAR -->
+<div style="max-width:1400px; margin:0 auto 1.5rem; padding:0 2rem; display:flex; justify-content:flex-end;">
+  <div style="display:flex; align-items:center; gap:8px;">
+    <span style="color:var(--text-muted); font-size:0.85rem;"><i class="fas fa-sort"></i> Trier par :</span>
+    <select id="sortSelect" onchange="applySort()" style="padding:8px 14px; background:var(--paper); border:1px solid var(--border); border-radius:14px; color:var(--text-primary); font-size:0.85rem; cursor:pointer; outline:none; font-family:inherit; box-shadow: 0 4px 12px rgba(0,0,0,.04);">
+      <option value="default">Par défaut</option>
+      <option value="prix_asc">Prix croissant</option>
+      <option value="prix_desc">Prix décroissant</option>
+      <option value="nom_asc">Nom A-Z</option>
+      <option value="nom_desc">Nom Z-A</option>
+    </select>
+  </div>
+</div>
+
+<script>
+function applySort() {
+    const val = document.getElementById('sortSelect').value;
+    const grid = document.querySelector('.products-grid');
+    if (!grid) return;
+    const cards = Array.from(grid.children);
+    cards.sort((a, b) => {
+        const priceA = parseFloat(a.querySelector('.product-price')?.textContent) || 0;
+        const priceB = parseFloat(b.querySelector('.product-price')?.textContent) || 0;
+        const nameA = a.querySelector('.product-title')?.textContent?.trim() || '';
+        const nameB = b.querySelector('.product-title')?.textContent?.trim() || '';
+        switch(val) {
+            case 'prix_asc': return priceA - priceB;
+            case 'prix_desc': return priceB - priceA;
+            case 'nom_asc': return nameA.localeCompare(nameB);
+            case 'nom_desc': return nameB.localeCompare(nameA);
+            default: return 0;
+        }
+    });
+    cards.forEach(card => grid.appendChild(card));
+}
+</script>
+
 <!-- PRODUCTS GRID -->
 <div class="page-container">
   <?php if (!empty($_GET['search']) || !empty($_GET['categorie'])): ?>
@@ -94,8 +131,14 @@ include __DIR__ . '/../partials/navbar.php';
   <div class="products-grid">
     <?php foreach ($produits as $p): ?>
     <div class="product-card">
-      <div class="product-card-image" style="background: linear-gradient(135deg, <?= ['#1a0533','#0a2240','#002a1f','#1a1000'][crc32($p->getNom()) % 4] ?>, var(--bg-secondary));">
-        <i class="fas fa-box" style="color: rgba(255,255,255,0.2); font-size:4rem; position:relative; z-index:1;"></i>
+      <div class="product-card-image" style="overflow: hidden; position: relative;">
+        <?php if ($p->getImage()): ?>
+          <img src="<?= htmlspecialchars($p->getImage()) ?>" alt="<?= htmlspecialchars($p->getNom()) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+        <?php else: ?>
+          <div style="width: 100%; height: 100%; background: linear-gradient(135deg, <?= ['#1a0533','#0a2240','#002a1f','#1a1000'][crc32($p->getNom()) % 4] ?>, var(--bg-secondary)); display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-box" style="color: rgba(255,255,255,0.2); font-size:4rem; position:relative; z-index:1;"></i>
+          </div>
+        <?php endif; ?>
       </div>
       <div class="product-card-body">
         <span class="product-category-tag"><?= htmlspecialchars($p->getNomCategorie()) ?></span>
@@ -109,9 +152,20 @@ include __DIR__ . '/../partials/navbar.php';
           <div class="product-price"><?= number_format($p->getPrix(), 2) ?> DT</div>
           <div class="product-stock"><i class="fas fa-cubes"></i> <?= $p->getQuantite() ?> en stock</div>
         </div>
-        <a href="index.php?page=produit_detail&id=<?= $p->getId() ?>" class="btn-sm btn-sm-purple">
-          Voir <i class="fas fa-arrow-right"></i>
-        </a>
+        <div style="display:flex; gap:6px;">
+          <?php if ($p->getStatut() === 'disponible'): ?>
+          <form method="POST" action="index.php?page=panier_add" style="margin:0;">
+            <input type="hidden" name="id_produit" value="<?= $p->getId() ?>">
+            <input type="hidden" name="quantite" value="1">
+            <button type="submit" class="btn-sm btn-sm-purple" title="Ajouter au panier" style="cursor:pointer; display:flex; align-items:center; justify-content:center; padding: 7px 12px;">
+              <i class="fas fa-cart-plus"></i>
+            </button>
+          </form>
+          <?php endif; ?>
+          <a href="index.php?page=produit_detail&id=<?= $p->getId() ?>" class="btn-sm btn-sm-outline" style="display:flex; align-items:center; justify-content:center; padding: 7px 12px;">
+            <i class="fas fa-eye"></i>
+          </a>
+        </div>
       </div>
     </div>
     <?php endforeach; ?>

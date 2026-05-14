@@ -9,22 +9,11 @@ class Produit {
     private $statut;
     private $image;
     private $id_categorie;
+    private $id_vendeur;
     private $created_at;
     private $updated_at;
     private $nom_categorie; // utilisé pour afficher le nom de la catégorie (jointure)
 
-    // Constructeur avec tous les champs du produit
-    public function __construct($nom = null, $description = null, $prix = null,
-                                $quantite = null, $statut = null, $image = null,
-                                $id_categorie = null) {
-        $this->nom = $nom;
-        $this->description = $description;
-        $this->prix = $prix;
-        $this->quantite = $quantite;
-        $this->statut = $statut;
-        $this->image = $image;
-        $this->id_categorie = $id_categorie;
-    }
 
     // -- Getters --
     public function getId() { return $this->id_produit; }
@@ -35,6 +24,7 @@ class Produit {
     public function getStatut() { return $this->statut; }
     public function getImage() { return $this->image; }
     public function getIdCategorie() { return $this->id_categorie; }
+    public function getIdVendeur() { return $this->id_vendeur; }
     public function getCreatedAt() { return $this->created_at; }
     public function getUpdatedAt() { return $this->updated_at; }
     public function getNomCategorie() { return $this->nom_categorie; }
@@ -48,6 +38,7 @@ class Produit {
     public function setStatut($statut) { $this->statut = $statut; }
     public function setImage($image) { $this->image = $image; }
     public function setIdCategorie($id_categorie) { $this->id_categorie = $id_categorie; }
+    public function setIdVendeur($id_vendeur) { $this->id_vendeur = $id_vendeur; }
     public function setCreatedAt($created_at) { $this->created_at = $created_at; }
     public function setUpdatedAt($updated_at) { $this->updated_at = $updated_at; }
     public function setNomCategorie($nom_categorie) { $this->nom_categorie = $nom_categorie; }

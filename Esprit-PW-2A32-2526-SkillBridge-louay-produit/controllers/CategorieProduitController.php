@@ -20,11 +20,10 @@ class CategorieProduitController {
 
             $categories = [];
             foreach ($rows as $row) {
-                $cat = new CategorieProduit(
-                    $row['nom_categorie'],
-                    $row['description'],
-                    $row['icone']
-                );
+                $cat = new CategorieProduit();
+                $cat->setNomCategorie($row['nom_categorie']);
+                $cat->setDescription($row['description']);
+                $cat->setIcone($row['icone']);
                 $cat->setId($row['id_categorie']);
                 $cat->setCreatedAt($row['created_at']);
                 $cat->setNbProduits((int)$row['nb_produits']);
@@ -47,11 +46,10 @@ class CategorieProduitController {
             $row = $query->fetch(PDO::FETCH_ASSOC);
 
             if ($row) {
-                $cat = new CategorieProduit(
-                    $row['nom_categorie'],
-                    $row['description'],
-                    $row['icone']
-                );
+                $cat = new CategorieProduit();
+                $cat->setNomCategorie($row['nom_categorie']);
+                $cat->setDescription($row['description']);
+                $cat->setIcone($row['icone']);
                 $cat->setId($row['id_categorie']);
                 $cat->setCreatedAt($row['created_at']);
                 return $cat;

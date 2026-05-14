@@ -25,7 +25,7 @@ $isEdit = isset($produit) && $produit;
     <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
 
-    <form method="POST" id="produitForm">
+    <form method="POST" id="produitForm" enctype="multipart/form-data">
       <div class="form-group">
         <label class="form-label">Nom du produit <span style="color:#ef4444">*</span></label>
         <input type="text" id="nom" name="nom" class="form-control"
@@ -45,6 +45,17 @@ $isEdit = isset($produit) && $produit;
           </option>
           <?php endforeach; ?>
         </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Image du produit</label>
+        <?php if ($isEdit && $produit->getImage()): ?>
+        <div style="margin-bottom: 10px;">
+          <img src="<?= htmlspecialchars($produit->getImage()) ?>" alt="Image actuelle" style="max-width: 150px; border-radius: 8px; border: 1px solid var(--border);">
+        </div>
+        <?php endif; ?>
+        <input type="file" id="image" name="image" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp">
+        <div style="color:var(--text-muted); font-size:0.78rem; margin-top:4px;">Formats acceptés : JPG, PNG, GIF, WEBP. Max: 5MB. <?= $isEdit ? 'Laissez vide pour conserver l\'image actuelle.' : '' ?></div>
       </div>
 
       <div class="form-group">

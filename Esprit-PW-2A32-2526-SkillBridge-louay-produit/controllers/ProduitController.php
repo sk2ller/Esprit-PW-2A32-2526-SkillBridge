@@ -37,16 +37,16 @@ class ProduitController {
 
             $produits = [];
             foreach ($rows as $row) {
-                $produit = new Produit(
-                    $row['nom'],
-                    $row['description'],
-                    $row['prix'],
-                    $row['quantite'],
-                    $row['statut'],
-                    $row['image'],
-                    $row['id_categorie']
-                );
+                $produit = new Produit();
                 $produit->setId($row['id_produit']);
+                $produit->setNom($row['nom']);
+                $produit->setDescription($row['description']);
+                $produit->setPrix($row['prix']);
+                $produit->setQuantite($row['quantite']);
+                $produit->setStatut($row['statut']);
+                $produit->setImage($row['image']);
+                $produit->setIdCategorie($row['id_categorie']);
+                $produit->setIdVendeur($row['id_vendeur'] ?? null);
                 $produit->setCreatedAt($row['created_at']);
                 $produit->setUpdatedAt($row['updated_at']);
                 $produit->setNomCategorie($row['nom_categorie']);
@@ -72,16 +72,16 @@ class ProduitController {
             $row = $query->fetch(PDO::FETCH_ASSOC);
 
             if ($row) {
-                $produit = new Produit(
-                    $row['nom'],
-                    $row['description'],
-                    $row['prix'],
-                    $row['quantite'],
-                    $row['statut'],
-                    $row['image'],
-                    $row['id_categorie']
-                );
+                $produit = new Produit();
                 $produit->setId($row['id_produit']);
+                $produit->setNom($row['nom']);
+                $produit->setDescription($row['description']);
+                $produit->setPrix($row['prix']);
+                $produit->setQuantite($row['quantite']);
+                $produit->setStatut($row['statut']);
+                $produit->setImage($row['image']);
+                $produit->setIdCategorie($row['id_categorie']);
+                $produit->setIdVendeur($row['id_vendeur'] ?? null);
                 $produit->setCreatedAt($row['created_at']);
                 $produit->setUpdatedAt($row['updated_at']);
                 $produit->setNomCategorie($row['nom_categorie']);
@@ -95,28 +95,33 @@ class ProduitController {
     }
 
     // Récupérer tous les produits (pour vendeur)
-    public function listProduitsVendeur() {
+    public function listProduitsVendeur($vendeurId = null) {
         $sql = "SELECT p.*, c.nom_categorie FROM produit p
-                JOIN categorie_produit c ON p.id_categorie = c.id_categorie
-                ORDER BY p.created_at DESC";
+                JOIN categorie_produit c ON p.id_categorie = c.id_categorie";
+        $params = [];
+        if ($vendeurId) {
+            $sql .= " WHERE p.id_vendeur = :vendeur_id";
+            $params[':vendeur_id'] = $vendeurId;
+        }
+        $sql .= " ORDER BY p.created_at DESC";
         $db = Config::getConnexion();
         try {
             $query = $db->prepare($sql);
-            $query->execute();
+            $query->execute($params);
             $rows = $query->fetchAll(PDO::FETCH_ASSOC);
 
             $produits = [];
             foreach ($rows as $row) {
-                $produit = new Produit(
-                    $row['nom'],
-                    $row['description'],
-                    $row['prix'],
-                    $row['quantite'],
-                    $row['statut'],
-                    $row['image'],
-                    $row['id_categorie']
-                );
+                $produit = new Produit();
                 $produit->setId($row['id_produit']);
+                $produit->setNom($row['nom']);
+                $produit->setDescription($row['description']);
+                $produit->setPrix($row['prix']);
+                $produit->setQuantite($row['quantite']);
+                $produit->setStatut($row['statut']);
+                $produit->setImage($row['image']);
+                $produit->setIdCategorie($row['id_categorie']);
+                $produit->setIdVendeur($row['id_vendeur'] ?? null);
                 $produit->setCreatedAt($row['created_at']);
                 $produit->setUpdatedAt($row['updated_at']);
                 $produit->setNomCategorie($row['nom_categorie']);
@@ -131,8 +136,8 @@ class ProduitController {
 
     // Ajouter un nouveau produit
     public function addProduit(Produit $produit) {
-        $sql = "INSERT INTO produit (nom, description, prix, quantite, statut, id_categorie)
-                VALUES (:nom, :description, :prix, :quantite, 'en_attente', :id_categorie)";
+        $sql = "INSERT INTO produit (nom, description, prix, quantite, statut, id_categorie, id_vendeur)
+                VALUES (:nom, :description, :prix, :quantite, 'en_attente', :id_categorie, :id_vendeur)";
         $db = Config::getConnexion();
         try {
             $query = $db->prepare($sql);
@@ -141,7 +146,8 @@ class ProduitController {
                 ':description' => $produit->getDescription(),
                 ':prix' => $produit->getPrix(),
                 ':quantite' => $produit->getQuantite(),
-                ':id_categorie' => $produit->getIdCategorie()
+                ':id_categorie' => $produit->getIdCategorie(),
+                ':id_vendeur' => $produit->getIdVendeur()
             ]);
             return $db->lastInsertId();
         } catch (Exception $e) {
@@ -153,7 +159,7 @@ class ProduitController {
     // Modifier un produit existant
     public function updateProduit(Produit $produit) {
         $sql = "UPDATE produit SET nom=:nom, description=:description, prix=:prix,
-                quantite=:quantite, id_categorie=:id_categorie WHERE id_produit=:id";
+                quantite=:quantite, id_categorie=:id_categorie, image=:image WHERE id_produit=:id";
         $db = Config::getConnexion();
         try {
             $query = $db->prepare($sql);
@@ -163,6 +169,7 @@ class ProduitController {
                 ':prix' => $produit->getPrix(),
                 ':quantite' => $produit->getQuantite(),
                 ':id_categorie' => $produit->getIdCategorie(),
+                ':image' => $produit->getImage(),
                 ':id' => $produit->getId()
             ]);
             return true;
@@ -218,6 +225,26 @@ class ProduitController {
             echo 'Erreur: ' . $e->getMessage();
         }
         return $stats;
+    }
+
+    // Gérer l'upload d'image pour un produit
+    public function handleImageUpload($file) {
+        if ($file && $file['error'] === UPLOAD_ERR_OK) {
+            $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, $allowedExts)) {
+                $uploadDir = __DIR__ . '/../uploads/produits/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+                $fileName = uniqid() . '.' . $ext;
+                $destPath = $uploadDir . $fileName;
+                if (move_uploaded_file($file['tmp_name'], $destPath)) {
+                    return 'uploads/produits/' . $fileName;
+                }
+            }
+        }
+        return null;
     }
 }
 ?>
